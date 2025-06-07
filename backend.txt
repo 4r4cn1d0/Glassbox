@@ -1,0 +1,39 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from trace import ModelTracer
+import asyncio
+from typing import List, Dict, Any
+
+app = FastAPI()
+
+# Enable CORS for development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize the model tracer
+tracer = ModelTracer()
+
+class TraceRequest(BaseModel):
+    prompt: str
+    max_new_tokens: int = 50
+
+@app.post("/api/trace")
+async def trace_endpoint(request: TraceRequest) -> List[Dict[str, Any]]:
+    try:
+        trace_data = tracer.trace_generation(
+            request.prompt,
+            max_new_tokens=request.max_new_tokens
+        )
+        return trace_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
