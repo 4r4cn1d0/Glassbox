@@ -78,16 +78,6 @@ function App() {
     }
   }, [darkMode]);
 
-  // Auto-advance current token for demo
-  useEffect(() => {
-    if (traceData.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentTokenIndex(prev => (prev + 1) % traceData.length);
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [traceData.length]);
-
   const handleTrace = async () => {
     setLoading(true);
     try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 
 interface AttentionHeatmapProps {
@@ -17,6 +17,8 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
   currentTokenIndex = 0
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hoveredCell, setHoveredCell] = useState<{row: number, col: number, value: number} | null>(null);
+  const [mousePos, setMousePos] = useState<{x: number, y: number}>({x: 0, y: 0});
 
   useEffect(() => {
     if (!attention || !tokens || !canvasRef.current) return;
@@ -25,8 +27,8 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const cellSize = 25;
-    const padding = 120;
+    const cellSize = 35; // Increased from 25 for better visibility
+    const padding = 150; // Increased for better label spacing
     const tokenCount = Math.min(tokens.length, 20); // Limit for visibility
 
     canvas.width = tokenCount * cellSize + padding * 2;
@@ -43,23 +45,30 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
     // Draw heatmap cells
     for (let i = 0; i < tokenCount; i++) {
       for (let j = 0; j < Math.min(tokenCount, attentionWeights.length); j++) {
-        const weight = Array.isArray(attentionWeights[i]) ? (attentionWeights[i] as number[])[j] : 0;
+        const weight = Array.isArray(attentionWeights[i]) ? (attentionWeights[i] as unknown as number[])[j] : 0;
         const intensity = Math.min(weight * 2, 1); // Scale for visibility
         
         // Use iOS blue color gradient
-        const opacity = 0.1 + intensity * 0.8;
-        ctx.fillStyle = `rgba(10, 132, 255, ${opacity})`;
+        let opacity = 0.1 + intensity * 0.8;
+        let fillColor = `rgba(10, 132, 255, ${opacity})`;
         
-        // Highlight current token row/column
+        // Enhanced highlighting for current token with much more prominent visibility
         if (i === currentTokenIndex || j === currentTokenIndex) {
-          ctx.fillStyle = `rgba(10, 132, 255, ${Math.max(opacity, 0.3)})`;
+          opacity = Math.max(opacity, 0.6);
+          fillColor = `rgba(255, 193, 7, ${opacity})`; // Golden yellow for current token
+          
+          // Add extra glow for current token intersection
+          if (i === currentTokenIndex && j === currentTokenIndex) {
+            fillColor = `rgba(255, 87, 34, 0.9)`; // Orange for the intersection
+          }
         }
         
+        ctx.fillStyle = fillColor;
         ctx.fillRect(
           padding + j * cellSize,
           padding + i * cellSize,
-          cellSize - 1,
-          cellSize - 1
+          cellSize - 2,
+          cellSize - 2
         );
 
         // Add subtle neumorphic shadow for depth
@@ -71,57 +80,73 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
           ctx.fillRect(
             padding + j * cellSize,
             padding + i * cellSize,
-            cellSize - 1,
-            cellSize - 1
+            cellSize - 2,
+            cellSize - 2
           );
           ctx.shadowBlur = 0;
         }
       }
     }
 
-    // Draw current token indicators with pulsing effect
+    // Draw much more prominent current token indicators
     if (currentTokenIndex < tokenCount) {
-      const pulseIntensity = 0.5 + 0.3 * Math.sin(Date.now() / 300);
+      // Pulsing effect with larger amplitude
+      const pulseIntensity = 0.7 + 0.4 * Math.sin(Date.now() / 200);
       
-      // Highlight current row
-      ctx.strokeStyle = `rgba(10, 132, 255, ${pulseIntensity})`;
-      ctx.lineWidth = 3;
+      // Thicker and more visible highlighting
+      ctx.strokeStyle = `rgba(255, 193, 7, ${pulseIntensity})`;
+      ctx.lineWidth = 6; // Increased from 3
+      ctx.setLineDash([8, 4]); // Dashed line for better visibility
+      
+      // Highlight current row with larger border
       ctx.strokeRect(
-        padding - 2,
-        padding + currentTokenIndex * cellSize - 2,
-        tokenCount * cellSize + 4,
-        cellSize + 4
+        padding - 6,
+        padding + currentTokenIndex * cellSize - 6,
+        tokenCount * cellSize + 12,
+        cellSize + 12
       );
       
-      // Highlight current column
+      // Highlight current column with larger border
       ctx.strokeRect(
-        padding + currentTokenIndex * cellSize - 2,
-        padding - 2,
-        cellSize + 4,
-        tokenCount * cellSize + 4
+        padding + currentTokenIndex * cellSize - 6,
+        padding - 6,
+        cellSize + 12,
+        tokenCount * cellSize + 12
       );
+      
+      ctx.setLineDash([]); // Reset dash pattern
     }
 
     // Draw token labels with better styling
-    ctx.font = 'bold 11px -apple-system, SF Pro Text, sans-serif';
+    ctx.font = 'bold 12px -apple-system, SF Pro Text, sans-serif';
     ctx.textAlign = 'center';
 
     // X-axis labels (source tokens)
-    ctx.fillStyle = '#1C1C1E';
     for (let i = 0; i < tokenCount; i++) {
-      const token = tokens[i]?.substring(0, 6) || ''; // Truncate long tokens
+      const token = tokens[i]?.substring(0, 8) || ''; // Show more characters
       
-      // Highlight current token label
+      // Enhanced highlighting for current token label
       if (i === currentTokenIndex) {
-        ctx.fillStyle = '#0A84FF';
-        ctx.font = 'bold 12px -apple-system, SF Pro Text, sans-serif';
+        ctx.fillStyle = '#FF5722'; // Orange for current token
+        ctx.font = 'bold 14px -apple-system, SF Pro Text, sans-serif';
+        
+        // Add background highlight
+        const textWidth = ctx.measureText(token).width;
+        ctx.fillStyle = 'rgba(255, 193, 7, 0.3)';
+        ctx.fillRect(
+          padding + i * cellSize + cellSize/2 - textWidth/2 - 4,
+          padding - 40,
+          textWidth + 8,
+          20
+        );
+        ctx.fillStyle = '#FF5722';
       } else {
         ctx.fillStyle = '#8E8E93';
-        ctx.font = 'bold 11px -apple-system, SF Pro Text, sans-serif';
+        ctx.font = 'bold 12px -apple-system, SF Pro Text, sans-serif';
       }
       
       ctx.save();
-      ctx.translate(padding + i * cellSize + cellSize/2, padding - 15);
+      ctx.translate(padding + i * cellSize + cellSize/2, padding - 20);
       ctx.rotate(-Math.PI/6);
       ctx.fillText(token, 0, 0);
       ctx.restore();
@@ -130,18 +155,29 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
     // Y-axis labels (target tokens)
     ctx.textAlign = 'right';
     for (let i = 0; i < tokenCount; i++) {
-      const token = tokens[i]?.substring(0, 6) || '';
+      const token = tokens[i]?.substring(0, 8) || '';
       
-      // Highlight current token label
+      // Enhanced highlighting for current token label
       if (i === currentTokenIndex) {
-        ctx.fillStyle = '#0A84FF';
-        ctx.font = 'bold 12px -apple-system, SF Pro Text, sans-serif';
+        ctx.fillStyle = '#FF5722'; // Orange for current token
+        ctx.font = 'bold 14px -apple-system, SF Pro Text, sans-serif';
+        
+        // Add background highlight
+        const textWidth = ctx.measureText(token).width;
+        ctx.fillStyle = 'rgba(255, 193, 7, 0.3)';
+        ctx.fillRect(
+          padding - textWidth - 25,
+          padding + i * cellSize + cellSize/2 - 10,
+          textWidth + 8,
+          20
+        );
+        ctx.fillStyle = '#FF5722';
       } else {
         ctx.fillStyle = '#8E8E93';
-        ctx.font = 'bold 11px -apple-system, SF Pro Text, sans-serif';
+        ctx.font = 'bold 12px -apple-system, SF Pro Text, sans-serif';
       }
       
-      ctx.fillText(token, padding - 15, padding + i * cellSize + cellSize/2 + 4);
+      ctx.fillText(token, padding - 20, padding + i * cellSize + cellSize/2 + 4);
     }
 
     // Draw grid lines with subtle styling
@@ -168,12 +204,45 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
 
   }, [attention, tokens, selectedLayer, selectedHead, currentTokenIndex]);
 
+  // Handle mouse events for hover functionality
+  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !attention[selectedLayer]?.[selectedHead]) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    const cellSize = 35;
+    const padding = 150;
+    const tokenCount = Math.min(tokens.length, 20);
+    
+    // Calculate which cell is being hovered
+    const col = Math.floor((x - padding) / cellSize);
+    const row = Math.floor((y - padding) / cellSize);
+    
+    if (col >= 0 && col < tokenCount && row >= 0 && row < tokenCount) {
+      const attentionWeights = attention[selectedLayer][selectedHead];
+      const weight = Array.isArray(attentionWeights[row]) ? 
+        (attentionWeights[row] as unknown as number[])[col] : 0;
+      
+      setHoveredCell({ row, col, value: weight });
+      setMousePos({ x: event.clientX, y: event.clientY });
+    } else {
+      setHoveredCell(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredCell(null);
+  };
+
   // Redraw periodically for pulsing effect
   useEffect(() => {
     const interval = setInterval(() => {
       // Trigger re-render for pulsing effect
       if (canvasRef.current) {
-        canvasRef.current.style.filter = `drop-shadow(0 0 ${4 + 2 * Math.sin(Date.now() / 300)}px rgba(10, 132, 255, 0.3))`;
+        canvasRef.current.style.filter = `drop-shadow(0 0 ${6 + 3 * Math.sin(Date.now() / 200)}px rgba(255, 193, 7, 0.5))`;
       }
     }, 50);
     
@@ -181,23 +250,52 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
   }, []);
 
   return (
-    <Box sx={{ p: 2, bgcolor: '#2a2a2a', borderRadius: 2, mb: 2 }}>
+    <Box sx={{ p: 2, bgcolor: '#2a2a2a', borderRadius: 2, mb: 2, position: 'relative' }}>
       <Typography variant="h6" sx={{ color: '#fff', mb: 2 }}>
         Attention Heatmap - Layer {selectedLayer + 1}, Head {selectedHead + 1}
       </Typography>
       <Box sx={{ overflow: 'auto', maxWidth: '100%' }}>
         <canvas 
           ref={canvasRef} 
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
           style={{ 
             borderRadius: '8px',
             backgroundColor: 'var(--card)',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            transition: 'filter 0.3s ease'
+            transition: 'filter 0.3s ease',
+            cursor: 'crosshair'
           }}
         />
       </Box>
+      
+      {/* Hover tooltip */}
+      {hoveredCell && (
+        <div
+          style={{
+            position: 'fixed',
+            left: mousePos.x + 10,
+            top: mousePos.y - 60,
+            background: 'rgba(0, 0, 0, 0.9)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            zIndex: 1000,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.1)'
+          }}
+        >
+          <div><strong>From:</strong> "{tokens[hoveredCell.row]?.substring(0, 10) || 'N/A'}"</div>
+          <div><strong>To:</strong> "{tokens[hoveredCell.col]?.substring(0, 10) || 'N/A'}"</div>
+          <div><strong>Attention:</strong> {hoveredCell.value.toFixed(4)}</div>
+          <div><strong>Position:</strong> [{hoveredCell.row}, {hoveredCell.col}]</div>
+        </div>
+      )}
+      
       <Typography variant="caption" sx={{ color: '#aaa', mt: 1, display: 'block' }}>
-        Red = High Attention, Blue = Low Attention
+        Hover over squares for detailed attention values
       </Typography>
       <div style={{
         fontSize: '11px',
@@ -231,9 +329,9 @@ const AttentionHeatmap: React.FC<AttentionHeatmapProps> = ({
           <div style={{
             width: '12px',
             height: '12px',
-            background: '#0A84FF',
+            background: '#FFC107',
             borderRadius: '2px',
-            boxShadow: '0 0 6px rgba(10, 132, 255, 0.6)'
+            boxShadow: '0 0 8px rgba(255, 193, 7, 0.6)'
           }} />
           Current Token
         </div>

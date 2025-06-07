@@ -25,7 +25,7 @@ const TokenMiniMap: React.FC<TokenMiniMapProps> = ({
     attentionData.forEach(layer => {
       layer.forEach(head => {
         if (Array.isArray(head) && head[tokenIndex] && Array.isArray(head[tokenIndex])) {
-          const tokenAttentions = head[tokenIndex] as number[];
+          const tokenAttentions = head[tokenIndex] as unknown as number[];
           totalAttention += tokenAttentions.reduce((sum: number, val: number) => sum + val, 0);
           count++;
         } else if (Array.isArray(head) && typeof head[tokenIndex] === 'number') {
