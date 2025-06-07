@@ -469,6 +469,17 @@ p, label, button {
   to { transform: rotate(360deg); }
 }
 
+@keyframes pulse {
+  0%, 100% { 
+    box-shadow: 0 0 8px rgba(10, 132, 255, 0.6);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 16px rgba(10, 132, 255, 0.8);
+    transform: scale(1.02);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out;
 }
@@ -507,4 +518,109 @@ p, label, button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
+}
+
+/* Consistent depth via layering */
+.card,
+.viz-panel,
+.tab-container {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.card:hover,
+.viz-panel:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+/* Enhanced button depth */
+.btn-primary {
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(10, 132, 255, 0.4);
+}
+
+.btn-secondary {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-secondary:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.btn-icon {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-icon:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Enhanced input depth */
+.input {
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.7);
+}
+
+.input:focus {
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.1), inset 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Zoom control styles */
+.zoom-controls {
+  display: flex;
+  gap: 4px;
+  background: var(--card);
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Enhanced mini-map styles */
+.mini-map {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .mini-map {
+    border-color: rgba(255,255,255,0.1);
+  }
+}
+
+/* Enhanced timeline styles */
+.timeline-event:hover {
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.2);
+}
+
+/* Enhanced probability bar animations */
+.probability-item {
+  transition: all 0.3s ease;
+}
+
+.probability-item:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 4px 8px rgba(10, 132, 255, 0.3));
+}
+
+/* Enhanced head thumbnail styles */
+.head-thumbnail {
+  transition: all 0.3s ease;
+}
+
+.head-thumbnail:hover {
+  filter: drop-shadow(0 4px 12px rgba(10, 132, 255, 0.3));
+}
+
+/* Session timeline enhancements */
+.session-timeline {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(10, 132, 255, 0.1);
+}
+
+/* Enhanced token hover effects with consistent depth */
+.token-hover:hover {
+  transform: scale(1.02) translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
 } 

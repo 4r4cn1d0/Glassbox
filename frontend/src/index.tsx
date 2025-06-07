@@ -3,10 +3,21 @@ import ReactDOM from 'react-dom/client';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
+import './theme.css';
 
-const darkTheme = createTheme({
+const lightTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
+    primary: {
+      main: '#0A84FF',
+    },
+    background: {
+      default: '#F0F2F5',
+      paper: '#FFFFFF',
+    },
+    text: {
+      primary: '#1C1C1E',
+    },
   },
 });
 
@@ -16,7 +27,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={darkTheme}>
+    <ThemeProvider theme={lightTheme}>
       <CssBaseline />
       <App />
     </ThemeProvider>
