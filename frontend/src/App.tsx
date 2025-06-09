@@ -31,12 +31,12 @@ import {
 } from 'lucide-react';
 import AttentionHeatmap from './AttentionHeatmap';
 import TokenProbabilityBars from './TokenProbabilityBars';
-import AttentionSpiderWeb from './AttentionSpiderWeb';
 import SkeletonLoader from './components/SkeletonLoader';
 import TokenMiniMap from './components/TokenMiniMap';
 import HeadThumbnails from './components/HeadThumbnails';
 import EnhancedProbabilityBars from './components/EnhancedProbabilityBars';
 import SessionTimeline from './components/SessionTimeline';
+import ForceDirectedWeb from './components/ForceDirectedWeb';
 import './theme.css';
 
 interface TraceData {
@@ -48,7 +48,7 @@ interface TraceData {
   is_generated: boolean;
 }
 
-type ViewTab = 'heatmap' | 'spiderweb' | 'probabilities' | 'text';
+type ViewTab = 'heatmap' | 'force-directed' | 'probabilities' | 'analysis';
 
 function App() {
   const [prompt, setPrompt] = useState('');
@@ -56,7 +56,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [selectedLayer, setSelectedLayer] = useState(0);
   const [selectedHead, setSelectedHead] = useState(0);
-  const [activeTab, setActiveTab] = useState<ViewTab>('heatmap');
+  const [activeTab, setActiveTab] = useState<ViewTab>('force-directed');
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -131,9 +131,9 @@ function App() {
 
   const tabs = [
     { id: 'heatmap' as ViewTab, label: 'Heatmap', icon: Grid3X3 },
-    { id: 'spiderweb' as ViewTab, label: 'Network', icon: Network },
+    { id: 'force-directed' as ViewTab, label: 'Force Directed', icon: Network },
     { id: 'probabilities' as ViewTab, label: 'Probabilities', icon: BarChart3 },
-    { id: 'text' as ViewTab, label: 'Analysis', icon: FileText },
+    { id: 'analysis' as ViewTab, label: 'Analysis', icon: FileText },
   ];
 
   const renderActiveView = () => {
@@ -208,45 +208,26 @@ function App() {
           </motion.div>
         );
 
-      case 'spiderweb':
+      case 'force-directed':
         return (
           <motion.div 
             className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ position: 'relative' }}
+            style={{ 
+              position: 'relative',
+              height: 'calc(100vh - 150px)', // Use most of the screen
+              minHeight: '800px'
+            }}
           >
-            <div className="viz-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-medium">Attention Network</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn-icon" onClick={handleZoomOut} title="Zoom Out">
-                  <ZoomOut size={16} />
-                </button>
-                <button className="btn-icon" onClick={handleZoomIn} title="Zoom In">
-                  <ZoomIn size={16} />
-                </button>
-                <button className="btn-icon" onClick={handleResetZoom} title="Reset Zoom">
-                  <RotateCcw size={16} />
-                </button>
-              </div>
-            </div>
-            <div className="viz-content" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', overflow: 'auto' }}>
-              <AttentionSpiderWeb
-                attention={allAttention}
-                tokens={tokens}
-                selectedLayer={selectedLayer}
-                selectedHead={selectedHead}
-                currentTokenIndex={currentTokenIndex}
-              />
-              <HeadThumbnails
-                attention={allAttention}
-                tokens={tokens}
-                selectedLayer={selectedLayer}
-                selectedHead={selectedHead}
-                onHeadSelect={handleHeadSelect}
-              />
-            </div>
+            <ForceDirectedWeb
+              attention={allAttention}
+              tokens={tokens}
+              selectedLayer={selectedLayer}
+              selectedHead={selectedHead}
+              currentTokenIndex={currentTokenIndex}
+            />
           </motion.div>
         );
 
@@ -271,98 +252,228 @@ function App() {
           </motion.div>
         );
 
-      case 'text':
+      case 'analysis':
         return (
           <motion.div 
             className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            style={{ 
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
-            <div className="viz-header">
+            <div className="viz-header" style={{ flexShrink: 0 }}>
               <h3 className="text-medium">Analysis & Timeline</h3>
             </div>
-            <div className="viz-content">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '400px' }}>
-                {/* Generated Text Display */}
-                <div>
-                  <h4 className="text-medium" style={{ marginBottom: '12px' }}>Generated Output</h4>
-                  <div style={{ 
-                    fontFamily: 'Monaco, Consolas, monospace',
-                    background: 'var(--bg)',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    fontSize: '16px',
-                    lineHeight: '1.6',
-                    wordBreak: 'break-word',
-                    height: '200px',
-                    overflow: 'auto'
+            <div className="viz-content" style={{ 
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              padding: '20px',
+              minHeight: 0
+            }}>
+              {/* Top Section - Generated Text Display */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                flex: '1 1 60%',
+                minHeight: '300px'
+              }}>
+                <h4 className="text-large" style={{ 
+                  marginBottom: '20px',
+                  color: 'var(--accent)',
+                  fontWeight: 'bold'
+                }}>
+                  📝 Generated Output
+                </h4>
+                <div style={{ 
+                  fontFamily: 'Monaco, Consolas, "SF Mono", monospace',
+                  background: 'var(--bg)',
+                  padding: '24px',
+                  borderRadius: '12px',
+                  fontSize: '18px',
+                  lineHeight: '1.8',
+                  wordBreak: 'break-word',
+                  height: 'calc(100% - 80px)',
+                  overflow: 'auto',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                  {prompt.split(' ').map((word, index) => (
+                    <span key={`prompt-${index}`} style={{ 
+                      color: 'var(--fg)',
+                      background: index === currentTokenIndex && currentTokenIndex < prompt.split(' ').length 
+                        ? 'rgba(10, 132, 255, 0.3)' : 'transparent',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      margin: '2px',
+                      display: 'inline-block',
+                      transition: 'all 0.2s ease'
+                    }}>
+                      {word}
+                    </span>
+                  ))}
+                  {traceData.map((item, index) => (
+                    <span key={`generated-${index}`} style={{ 
+                      color: 'var(--accent)', 
+                      fontWeight: '700',
+                      background: index + prompt.split(' ').length === currentTokenIndex 
+                        ? 'rgba(10, 132, 255, 0.4)' 
+                        : 'rgba(10, 132, 255, 0.15)',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      margin: '2px',
+                      display: 'inline-block',
+                      position: 'relative',
+                      boxShadow: index + prompt.split(' ').length === currentTokenIndex 
+                        ? '0 0 12px rgba(10, 132, 255, 0.8), 0 0 24px rgba(10, 132, 255, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
+                      animation: index + prompt.split(' ').length === currentTokenIndex 
+                        ? 'pulse 1.5s infinite' : 'none',
+                      transform: index + prompt.split(' ').length === currentTokenIndex 
+                        ? 'scale(1.05)' : 'scale(1)',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      {item.token}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom Section - Split into AI Insights and Timeline */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '20px',
+                flex: '1 1 40%',
+                minHeight: '250px'
+              }}>
+                {/* AI Insights - Enhanced */}
+                <motion.div
+                  style={{
+                    padding: '24px',
+                    background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.08), rgba(10, 132, 255, 0.02))',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(10, 132, 255, 0.2)',
+                    boxShadow: '0 4px 16px rgba(10, 132, 255, 0.1)'
+                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <h4 className="text-large" style={{ 
+                    color: 'var(--accent)', 
+                    marginBottom: '16px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
-                    {prompt.split(' ').map((word, index) => (
-                      <span key={`prompt-${index}`} style={{ 
+                    💡 AI Insights
+                  </h4>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    {[
+                      `Strong attention patterns detected at layer ${selectedLayer + 1}`,
+                      `Current token shows ${Math.round(Math.random() * 40 + 60)}% confidence`,
+                      `Bidirectional attention flow indicates context awareness`,
+                      `Head ${selectedHead + 1} specializes in ${Math.random() > 0.5 ? 'syntax' : 'semantics'} processing`
+                    ].map((insight, index) => (
+                      <div key={index} style={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        fontSize: '14px',
                         color: 'var(--fg)',
-                        background: index === currentTokenIndex && currentTokenIndex < prompt.split(' ').length 
-                          ? 'rgba(10, 132, 255, 0.2)' : 'transparent',
-                        padding: '2px 4px',
-                        borderRadius: '4px'
-                      }}>
-                        {word}{' '}
-                      </span>
-                    ))}
-                    {traceData.map((item, index) => (
-                      <span key={`generated-${index}`} style={{ 
-                        color: 'var(--accent)', 
-                        fontWeight: '600',
-                        background: index + prompt.split(' ').length === currentTokenIndex 
-                          ? 'rgba(10, 132, 255, 0.3)' 
-                          : 'rgba(10, 132, 255, 0.1)',
-                        padding: '2px 4px',
-                        borderRadius: '4px',
-                        marginLeft: '4px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         position: 'relative',
-                        boxShadow: index + prompt.split(' ').length === currentTokenIndex 
-                          ? '0 0 8px rgba(10, 132, 255, 0.6)' : 'none',
-                        animation: index + prompt.split(' ').length === currentTokenIndex 
-                          ? 'pulse 1.5s infinite' : 'none'
+                        overflow: 'hidden'
                       }}>
-                        {item.token}
-                      </span>
+                        <div style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: '4px',
+                          background: 'var(--accent)'
+                        }} />
+                        <div style={{ marginLeft: '8px' }}>
+                          {insight}
+                        </div>
+                      </div>
                     ))}
                   </div>
+                  
+                  {/* Additional Stats */}
+                  <div style={{ 
+                    marginTop: '20px',
+                    padding: '16px',
+                    background: 'rgba(0, 0, 0, 0.2)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <h5 style={{ 
+                      color: 'var(--accent)', 
+                      margin: '0 0 12px 0',
+                      fontSize: '16px'
+                    }}>
+                      📊 Statistics
+                    </h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--accent)' }}>
+                          {tokens.length}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--secondary)' }}>
+                          Total Tokens
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>
+                          {traceData.length}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--secondary)' }}>
+                          Generated
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
 
-                  {/* Meta-insights card */}
-                  <motion.div
-                    style={{
-                      marginTop: '16px',
-                      padding: '16px',
-                      background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.05), rgba(10, 132, 255, 0.02))',
-                      borderRadius: '12px',
-                      border: '1px solid rgba(10, 132, 255, 0.1)'
-                    }}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                  >
-                    <h4 className="text-small" style={{ color: 'var(--accent)', marginBottom: '8px' }}>
-                      💡 AI Insights
-                    </h4>
-                    <ul style={{ fontSize: '12px', color: 'var(--secondary)', margin: 0, paddingLeft: '16px' }}>
-                      <li>Strong attention patterns detected at layer {selectedLayer + 1}</li>
-                      <li>Current token shows {Math.round(Math.random() * 40 + 60)}% confidence</li>
-                      <li>Bidirectional attention flow indicates context awareness</li>
-                      <li>Head {selectedHead + 1} specializes in {Math.random() > 0.5 ? 'syntax' : 'semantics'} processing</li>
-                    </ul>
-                  </motion.div>
-                </div>
-
-                {/* Session Timeline */}
-                <div>
-                  <SessionTimeline
-                    tokens={tokens}
-                    traceData={traceData}
-                    currentTokenIndex={currentTokenIndex}
-                    onJumpToToken={handleTokenJump}
-                  />
+                {/* Session Timeline - Enhanced */}
+                <div style={{
+                  background: 'linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  overflow: 'hidden'
+                }}>
+                  <h4 className="text-large" style={{ 
+                    marginBottom: '16px',
+                    color: 'var(--accent)',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    📈 Session Timeline
+                  </h4>
+                  <div style={{ height: 'calc(100% - 50px)' }}>
+                    <SessionTimeline
+                      tokens={tokens}
+                      traceData={traceData}
+                      currentTokenIndex={currentTokenIndex}
+                      onJumpToToken={handleTokenJump}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
