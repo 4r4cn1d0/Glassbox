@@ -1,0 +1,18 @@
+{
+  "short_name": "Glassbox",
+  "name": "Glassbox - Advanced LLM Debugger",
+  "description": "Advanced debugging and visualization tools for large language models",
+  "icons": [
+    {
+      "src": "logo_light.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#007BFF",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait-primary"
+} 

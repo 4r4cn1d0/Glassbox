@@ -1,82 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  Paper, 
-  Typography, 
-  Grid, 
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
+import { Slider } from '@mui/material';
 import { 
   Grid3X3, 
-  Network, 
   BarChart3, 
   FileText, 
+  Play, 
   Settings, 
-  Moon, 
-  Sun, 
-  ChevronLeft, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw,
+  ChevronLeft,
   ChevronRight,
-  Play,
   Loader2,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw
+  Map,
+  Eye,
+  Zap
 } from 'lucide-react';
 import AttentionHeatmap from './AttentionHeatmap';
 import TokenProbabilityBars from './TokenProbabilityBars';
 import SkeletonLoader from './components/SkeletonLoader';
 import TokenMiniMap from './components/TokenMiniMap';
 import HeadThumbnails from './components/HeadThumbnails';
-import EnhancedProbabilityBars from './components/EnhancedProbabilityBars';
 import SessionTimeline from './components/SessionTimeline';
-import ForceDirectedWeb from './components/ForceDirectedWeb';
+import EmbeddingProjection from './components/EmbeddingProjection';
+import LogitLens from './components/LogitLens';
+import ComponentHooks from './components/ComponentHooks';
+import LandingPage from './components/LandingPage';
 import './theme.css';
+
+interface TokenData {
+  token: string;
+  token_id: number;
+  probability: number;
+  logit: number;
+}
 
 interface TraceData {
   token: string;
   token_id: number;
   position: number;
   logits: number[];
-  attention: number[][][];
+  probabilities: number[];
+  attention: any[];
+  top_tokens: TokenData[];
+  embedding: number[];
   is_generated: boolean;
 }
 
-type ViewTab = 'heatmap' | 'force-directed' | 'probabilities' | 'analysis';
+interface PromptToken {
+  token: string;
+  token_id: number;
+  embedding: number[];
+}
+
+interface ApiResponse {
+  session_id: string;
+  prompt: string;
+  trace_data: TraceData[];
+  prompt_tokens: PromptToken[];
+  all_embeddings: number[][];
+  vocabulary_size: number;
+}
+
+type ViewTab = 'heatmap' | 'probabilities' | 'analysis' | 'embeddings' | 'logit_lens' | 'component_hooks';
 
 function App() {
-  const [prompt, setPrompt] = useState('');
-  const [traceData, setTraceData] = useState<TraceData[]>([]);
+  const [showLandingPage, setShowLandingPage] = useState(true);
+  const [prompt, setPrompt] = useState('The secret to happiness is');
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedLayer, setSelectedLayer] = useState(0);
   const [selectedHead, setSelectedHead] = useState(0);
-  const [activeTab, setActiveTab] = useState<ViewTab>('force-directed');
-  const [darkMode, setDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<ViewTab>('heatmap');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Initialize dark mode from system preference
+  const handleLaunchApp = () => {
+    setShowLandingPage(false);
+  };
+
+  // Force light mode - no dark mode toggle
   useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(prefersDark);
+    document.documentElement.removeAttribute('data-theme');
   }, []);
 
-  // Apply dark mode to document
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
-  }, [darkMode]);
+  // Early return for landing page
+  if (showLandingPage) {
+    return <LandingPage onLaunchApp={handleLaunchApp} />;
+  }
 
   const handleTrace = async () => {
     setLoading(true);
@@ -86,10 +100,15 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt, max_new_tokens: 20 }),
+        body: JSON.stringify({ 
+          prompt, 
+          max_new_tokens: 20,
+          top_k_attention: 50,
+          top_k_tokens: 20
+        }),
       });
-      const data = await response.json();
-      setTraceData(data);
+      const data: ApiResponse = await response.json();
+      setApiResponse(data);
       setCurrentTokenIndex(0);
     } catch (error) {
       console.error('Error:', error);
@@ -97,12 +116,33 @@ function App() {
     setLoading(false);
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+  const handleTimelineScrub = async (tokenIndex: number) => {
+    if (!apiResponse?.session_id) return;
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/scrub', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: apiResponse.session_id,
+          token_index: tokenIndex
+        }),
+      });
+      
+      if (response.ok) {
+        setCurrentTokenIndex(tokenIndex);
+      }
+    } catch (error) {
+      console.error('Scrubbing error:', error);
+      // Fallback to local index change
+      setCurrentTokenIndex(tokenIndex);
+    }
   };
 
   const handleTokenJump = (index: number) => {
-    setCurrentTokenIndex(index);
+    handleTimelineScrub(index);
   };
 
   const handleHeadSelect = (headIndex: number) => {
@@ -121,18 +161,22 @@ function App() {
     setZoomLevel(1);
   };
 
-  const generatedText = traceData.map(item => item.token).join('');
-  const tokens = prompt.split(' ').concat(traceData.map(item => item.token));
+  // Derived data
+  const traceData = apiResponse?.trace_data || [];
+  const promptTokens = apiResponse?.prompt_tokens || [];
+  const allTokens = [...promptTokens.map(t => t.token), ...traceData.map(t => t.token)];
   const allAttention = traceData.length > 0 ? traceData[0].attention : [];
-  const allLogits = traceData.map(item => item.logits);
+  const topTokensData = traceData.map(item => item.top_tokens);
 
   const maxLayers = allAttention.length;
   const maxHeads = allAttention[0]?.length || 0;
 
   const tabs = [
     { id: 'heatmap' as ViewTab, label: 'Heatmap', icon: Grid3X3 },
-    { id: 'force-directed' as ViewTab, label: 'Force Directed', icon: Network },
     { id: 'probabilities' as ViewTab, label: 'Probabilities', icon: BarChart3 },
+    { id: 'embeddings' as ViewTab, label: 'Embeddings', icon: Map },
+    { id: 'logit_lens' as ViewTab, label: 'Neural Lens', icon: Eye },
+    { id: 'component_hooks' as ViewTab, label: 'Circuit Analysis', icon: Zap },
     { id: 'analysis' as ViewTab, label: 'Analysis', icon: FileText },
   ];
 
@@ -141,24 +185,35 @@ function App() {
       return <SkeletonLoader type="visualization" />;
     }
 
-    if (traceData.length === 0) {
+    if (!apiResponse || traceData.length === 0) {
       return (
         <motion.div 
-          className="viz-panel"
           style={{ 
             textAlign: 'center',
             padding: '60px 40px',
-            background: 'linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%)'
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            border: '1px solid #E9ECEF'
           }}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🧠</div>
-          <h3 className="text-large" style={{ marginBottom: '8px' }}>
+          <h3 style={{ 
+            marginBottom: '8px',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#495057'
+          }}>
             Welcome to Glassbox
           </h3>
-          <p className="text-small" style={{ color: 'var(--secondary)', maxWidth: '400px', margin: '0 auto' }}>
+          <p style={{ 
+            color: '#6C757D', 
+            maxWidth: '400px', 
+            margin: '0 auto',
+            fontSize: '16px'
+          }}>
             Enter a prompt to begin exploring LLM attention patterns and token generation in real-time.
           </p>
         </motion.div>
@@ -169,37 +224,89 @@ function App() {
       case 'heatmap':
         return (
           <motion.div 
-            className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             style={{ position: 'relative' }}
           >
-            <div className="viz-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-medium">Attention Heatmap</h3>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px',
+              background: '#FFFFFF',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid #E9ECEF'
+            }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#495057',
+                margin: 0
+              }}>
+                Attention Heatmap
+              </h3>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn-icon" onClick={handleZoomOut} title="Zoom Out">
+                <button 
+                  onClick={handleZoomOut} 
+                  title="Zoom Out"
+                  style={{
+                    background: '#F8F9FA',
+                    border: '1px solid #DEE2E6',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    color: '#495057'
+                  }}
+                >
                   <ZoomOut size={16} />
                 </button>
-                <button className="btn-icon" onClick={handleZoomIn} title="Zoom In">
+                <button 
+                  onClick={handleZoomIn} 
+                  title="Zoom In"
+                  style={{
+                    background: '#F8F9FA',
+                    border: '1px solid #DEE2E6',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    color: '#495057'
+                  }}
+                >
                   <ZoomIn size={16} />
                 </button>
-                <button className="btn-icon" onClick={handleResetZoom} title="Reset Zoom">
+                <button 
+                  onClick={handleResetZoom} 
+                  title="Reset Zoom"
+                  style={{
+                    background: '#F8F9FA',
+                    border: '1px solid #DEE2E6',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    color: '#495057'
+                  }}
+                >
                   <RotateCcw size={16} />
                 </button>
               </div>
             </div>
-            <div className="viz-content" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left', overflow: 'auto' }}>
+            <div style={{ 
+              transform: `scale(${zoomLevel})`, 
+              transformOrigin: 'top left', 
+              overflow: 'auto' 
+            }}>
               <AttentionHeatmap
                 attention={allAttention}
-                tokens={tokens}
+                tokens={allTokens}
                 selectedLayer={selectedLayer}
                 selectedHead={selectedHead}
                 currentTokenIndex={currentTokenIndex}
               />
               <HeadThumbnails
                 attention={allAttention}
-                tokens={tokens}
+                tokens={allTokens}
                 selectedLayer={selectedLayer}
                 selectedHead={selectedHead}
                 onHeadSelect={handleHeadSelect}
@@ -208,54 +315,41 @@ function App() {
           </motion.div>
         );
 
-      case 'force-directed':
+      case 'probabilities':
         return (
           <motion.div 
-            className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ 
-              position: 'relative',
-              height: 'calc(100vh - 150px)', // Use most of the screen
-              minHeight: '800px'
-            }}
+            style={{ height: '100%' }}
           >
-            <ForceDirectedWeb
-              attention={allAttention}
-              tokens={tokens}
-              selectedLayer={selectedLayer}
-              selectedHead={selectedHead}
-              currentTokenIndex={currentTokenIndex}
+            <TokenProbabilityBars
+              topTokensData={topTokensData}
+              currentTokenIndex={Math.max(0, currentTokenIndex - promptTokens.length)}
+              onTokenSelect={(index: number) => handleTokenJump(index + promptTokens.length)}
             />
           </motion.div>
         );
 
-      case 'probabilities':
+      case 'embeddings':
         return (
           <motion.div 
-            className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            style={{ height: '100%' }}
           >
-            <div className="viz-header">
-              <h3 className="text-medium">Token Probabilities</h3>
-            </div>
-            <div className="viz-content">
-              <EnhancedProbabilityBars
-                tokens={traceData.map(item => item.token)}
-                logits={allLogits}
-                currentTokenIndex={currentTokenIndex}
-              />
-            </div>
+            <EmbeddingProjection
+              sessionId={apiResponse?.session_id || null}
+              currentTokenIndex={currentTokenIndex}
+              onTokenClick={handleTokenJump}
+            />
           </motion.div>
         );
 
       case 'analysis':
         return (
           <motion.div 
-            className="viz-panel"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -265,10 +359,24 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div className="viz-header" style={{ flexShrink: 0 }}>
-              <h3 className="text-medium">Analysis & Timeline</h3>
+            <div style={{ 
+              flexShrink: 0,
+              marginBottom: '20px',
+              background: '#FFFFFF',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid #E9ECEF'
+            }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#495057',
+                margin: 0
+              }}>
+                Analysis & Timeline
+              </h3>
             </div>
-            <div className="viz-content" style={{ 
+            <div style={{ 
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
@@ -278,23 +386,24 @@ function App() {
             }}>
               {/* Top Section - Generated Text Display */}
               <div style={{ 
-                background: 'linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%)',
+                background: 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)',
                 borderRadius: '16px',
                 padding: '24px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                border: '1px solid #E9ECEF',
                 flex: '1 1 60%',
                 minHeight: '300px'
               }}>
-                <h4 className="text-large" style={{ 
+                <h4 style={{ 
                   marginBottom: '20px',
-                  color: 'var(--accent)',
-                  fontWeight: 'bold'
+                  color: '#007BFF',
+                  fontWeight: 'bold',
+                  fontSize: '20px'
                 }}>
                   📝 Generated Output
                 </h4>
                 <div style={{ 
                   fontFamily: 'Monaco, Consolas, "SF Mono", monospace',
-                  background: 'var(--bg)',
+                  background: '#F8F9FA',
                   padding: '24px',
                   borderRadius: '12px',
                   fontSize: '18px',
@@ -302,43 +411,49 @@ function App() {
                   wordBreak: 'break-word',
                   height: 'calc(100% - 80px)',
                   overflow: 'auto',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
+                  border: '1px solid #E9ECEF',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.05)'
                 }}>
-                  {prompt.split(' ').map((word, index) => (
+                  {promptTokens.map((token, index) => (
                     <span key={`prompt-${index}`} style={{ 
-                      color: 'var(--fg)',
-                      background: index === currentTokenIndex && currentTokenIndex < prompt.split(' ').length 
-                        ? 'rgba(10, 132, 255, 0.3)' : 'transparent',
+                      color: '#495057',
+                      background: index === currentTokenIndex 
+                        ? 'rgba(0, 123, 255, 0.3)' : 'transparent',
                       padding: '4px 8px',
                       borderRadius: '6px',
                       margin: '2px',
                       display: 'inline-block',
-                      transition: 'all 0.2s ease'
-                    }}>
-                      {word}
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleTokenJump(index)}
+                    >
+                      {token.token}
                     </span>
                   ))}
                   {traceData.map((item, index) => (
                     <span key={`generated-${index}`} style={{ 
-                      color: 'var(--accent)', 
+                      color: '#007BFF', 
                       fontWeight: '700',
-                      background: index + prompt.split(' ').length === currentTokenIndex 
-                        ? 'rgba(10, 132, 255, 0.4)' 
-                        : 'rgba(10, 132, 255, 0.15)',
+                      background: index + promptTokens.length === currentTokenIndex 
+                        ? 'rgba(0, 123, 255, 0.4)' 
+                        : 'rgba(0, 123, 255, 0.15)',
                       padding: '4px 8px',
                       borderRadius: '6px',
                       margin: '2px',
                       display: 'inline-block',
                       position: 'relative',
-                      boxShadow: index + prompt.split(' ').length === currentTokenIndex 
-                        ? '0 0 12px rgba(10, 132, 255, 0.8), 0 0 24px rgba(10, 132, 255, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
-                      animation: index + prompt.split(' ').length === currentTokenIndex 
+                      boxShadow: index + promptTokens.length === currentTokenIndex 
+                        ? '0 0 12px rgba(0, 123, 255, 0.8), 0 0 24px rgba(0, 123, 255, 0.4)' : '0 2px 4px rgba(0,0,0,0.1)',
+                      animation: index + promptTokens.length === currentTokenIndex 
                         ? 'pulse 1.5s infinite' : 'none',
-                      transform: index + prompt.split(' ').length === currentTokenIndex 
+                      transform: index + promptTokens.length === currentTokenIndex 
                         ? 'scale(1.05)' : 'scale(1)',
-                      transition: 'all 0.3s ease'
-                    }}>
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleTokenJump(index + promptTokens.length)}
+                    >
                       {item.token}
                     </span>
                   ))}
@@ -357,22 +472,23 @@ function App() {
                 <motion.div
                   style={{
                     padding: '24px',
-                    background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.08), rgba(10, 132, 255, 0.02))',
+                    background: 'linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(0, 123, 255, 0.02))',
                     borderRadius: '16px',
-                    border: '1px solid rgba(10, 132, 255, 0.2)',
-                    boxShadow: '0 4px 16px rgba(10, 132, 255, 0.1)'
+                    border: '1px solid rgba(0, 123, 255, 0.2)',
+                    boxShadow: '0 4px 16px rgba(0, 123, 255, 0.1)'
                   }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
                 >
-                  <h4 className="text-large" style={{ 
-                    color: 'var(--accent)', 
+                  <h4 style={{ 
+                    color: '#007BFF', 
                     marginBottom: '16px',
                     fontWeight: 'bold',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    fontSize: '18px'
                   }}>
                     💡 AI Insights
                   </h4>
@@ -382,18 +498,18 @@ function App() {
                     gap: '12px'
                   }}>
                     {[
-                      `Strong attention patterns detected at layer ${selectedLayer + 1}`,
-                      `Current token shows ${Math.round(Math.random() * 40 + 60)}% confidence`,
-                      `Bidirectional attention flow indicates context awareness`,
-                      `Head ${selectedHead + 1} specializes in ${Math.random() > 0.5 ? 'syntax' : 'semantics'} processing`
+                      `Cached session: ${apiResponse?.session_id?.slice(-8) || 'N/A'}`,
+                      `Vocabulary size: ${apiResponse?.vocabulary_size?.toLocaleString() || 'Unknown'}`,
+                      `Current position: ${currentTokenIndex + 1}/${allTokens.length}`,
+                      `Layer ${selectedLayer + 1}, Head ${selectedHead + 1} selected`
                     ].map((insight, index) => (
                       <div key={index} style={{
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: 'rgba(255, 255, 255, 0.8)',
                         padding: '12px 16px',
                         borderRadius: '10px',
                         fontSize: '14px',
-                        color: 'var(--fg)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#495057',
+                        border: '1px solid rgba(0, 123, 255, 0.1)',
                         position: 'relative',
                         overflow: 'hidden'
                       }}>
@@ -403,7 +519,7 @@ function App() {
                           top: 0,
                           bottom: 0,
                           width: '4px',
-                          background: 'var(--accent)'
+                          background: '#007BFF'
                         }} />
                         <div style={{ marginLeft: '8px' }}>
                           {insight}
@@ -416,12 +532,12 @@ function App() {
                   <div style={{ 
                     marginTop: '20px',
                     padding: '16px',
-                    background: 'rgba(0, 0, 0, 0.2)',
+                    background: 'rgba(248, 249, 250, 0.8)',
                     borderRadius: '12px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                    border: '1px solid #E9ECEF'
                   }}>
                     <h5 style={{ 
-                      color: 'var(--accent)', 
+                      color: '#007BFF', 
                       margin: '0 0 12px 0',
                       fontSize: '16px'
                     }}>
@@ -429,18 +545,18 @@ function App() {
                     </h5>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--accent)' }}>
-                          {tokens.length}
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#007BFF' }}>
+                          {allTokens.length}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--secondary)' }}>
+                        <div style={{ fontSize: '12px', color: '#6C757D' }}>
                           Total Tokens
                         </div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#28A745' }}>
                           {traceData.length}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--secondary)' }}>
+                        <div style={{ fontSize: '12px', color: '#6C757D' }}>
                           Generated
                         </div>
                       </div>
@@ -450,25 +566,26 @@ function App() {
 
                 {/* Session Timeline - Enhanced */}
                 <div style={{
-                  background: 'linear-gradient(135deg, var(--card) 0%, rgba(10, 132, 255, 0.02) 100%)',
+                  background: 'linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%)',
                   borderRadius: '16px',
                   padding: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  border: '1px solid #E9ECEF',
                   overflow: 'hidden'
                 }}>
-                  <h4 className="text-large" style={{ 
+                  <h4 style={{ 
                     marginBottom: '16px',
-                    color: 'var(--accent)',
+                    color: '#007BFF',
                     fontWeight: 'bold',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    fontSize: '18px'
                   }}>
                     📈 Session Timeline
                   </h4>
                   <div style={{ height: 'calc(100% - 50px)' }}>
                     <SessionTimeline
-                      tokens={tokens}
+                      tokens={allTokens}
                       traceData={traceData}
                       currentTokenIndex={currentTokenIndex}
                       onJumpToToken={handleTokenJump}
@@ -480,18 +597,117 @@ function App() {
           </motion.div>
         );
 
+      case 'logit_lens':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ height: '100%' }}
+          >
+            <LogitLens
+              sessionId={apiResponse?.session_id || null}
+              currentTokenIndex={currentTokenIndex}
+              onLayerSelect={(layer: number) => setSelectedLayer(layer)}
+            />
+          </motion.div>
+        );
+
+      case 'component_hooks':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ height: '100%' }}
+          >
+            <ComponentHooks
+              sessionId={apiResponse?.session_id || null}
+              currentTokenIndex={currentTokenIndex}
+              selectedLayer={selectedLayer}
+              onComponentSelect={(component: string, layer: number) => {
+                setSelectedLayer(layer);
+                console.log(`Selected component: ${component} at layer ${layer}`);
+              }}
+            />
+          </motion.div>
+        );
+
       default:
         return null;
     }
   };
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex' }}>
+    <div style={{ background: '#F8F9FA', minHeight: '100vh', display: 'flex' }}>
+      {/* Header with Logo and Back to Home */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '60px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid #E9ECEF',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img 
+            src="/logo_light.png" 
+            alt="Glassbox Logo" 
+            style={{ 
+              height: '32px', 
+              width: 'auto'
+            }} 
+          />
+          <span style={{
+            fontSize: '20px',
+            fontWeight: '700',
+            color: '#007aff'
+          }}>
+            Glassbox
+          </span>
+        </div>
+        
+        <button
+          onClick={() => setShowLandingPage(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(0, 122, 255, 0.1)',
+            color: '#007aff',
+            border: '1px solid rgba(0, 122, 255, 0.2)',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontWeight: '600',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 122, 255, 0.2)';
+            e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.4)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 122, 255, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(0, 122, 255, 0.2)';
+          }}
+        >
+          ← Back to Home
+        </button>
+      </div>
+
       {/* Floating Token Mini-Map */}
       <AnimatePresence>
         {traceData.length > 0 && (
           <TokenMiniMap
-            tokens={tokens}
+            tokens={allTokens}
             attentionData={allAttention}
             currentTokenIndex={currentTokenIndex}
             onTokenClick={handleTokenJump}
@@ -501,7 +717,6 @@ function App() {
 
       {/* Collapsible Sidebar */}
       <motion.div 
-        className="card"
         style={{ 
           width: sidebarCollapsed ? '60px' : '320px',
           height: '100vh',
@@ -512,7 +727,10 @@ function App() {
           position: 'relative',
           overflow: 'hidden',
           transition: 'width 0.3s ease',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          background: '#FFFFFF',
+          border: '1px solid #E9ECEF',
+          marginTop: '60px'
         }}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -520,14 +738,19 @@ function App() {
       >
         {/* Sidebar Toggle */}
         <button
-          className="btn-icon"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           style={{
             position: 'absolute',
             top: '16px',
             right: '16px',
-            zIndex: 10
+            zIndex: 10,
+            background: '#F8F9FA',
+            border: '1px solid #DEE2E6',
+            borderRadius: '8px',
+            padding: '8px',
+            cursor: 'pointer',
+            color: '#495057'
           }}
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         >
           {sidebarCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
         </button>
@@ -535,22 +758,18 @@ function App() {
         <div style={{ padding: sidebarCollapsed ? '16px 8px' : '24px', paddingTop: '60px' }}>
           {!sidebarCollapsed && (
             <>
-              {/* Header with Dark Mode Toggle */}
-              <div className="header-actions" style={{ marginBottom: '24px', justifyContent: 'space-between' }}>
-                <h1 className="text-large" style={{ 
-                  background: 'linear-gradient(45deg, var(--accent), #21CBF3)',
+              {/* Header - No Dark Mode Toggle */}
+              <div style={{ marginBottom: '24px', justifyContent: 'flex-start' }}>
+                <h1 style={{ 
+                  background: 'linear-gradient(45deg, #007BFF, #0056B3)',
                   WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  WebkitTextFillColor: 'transparent',
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  margin: 0
                 }}>
                   Glassbox
                 </h1>
-                <button
-                  className="btn-icon"
-                  onClick={toggleDarkMode}
-                  title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                >
-                  {darkMode ? <Sun size={24} /> : <Moon size={24} />}
-                </button>
               </div>
 
               {/* Input Section */}
@@ -560,22 +779,50 @@ function App() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-medium" style={{ marginBottom: '16px' }}>
+                <h2 style={{ 
+                  marginBottom: '16px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#495057'
+                }}>
                   Input Prompt
                 </h2>
                 <textarea
-                  className="input"
                   placeholder="Enter your prompt to analyze..."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={4}
-                  style={{ marginBottom: '16px' }}
+                  style={{ 
+                    width: '100%',
+                    marginBottom: '16px',
+                    padding: '12px',
+                    border: '2px solid #DEE2E6',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontFamily: 'SF Pro Text, -apple-system, sans-serif',
+                    resize: 'vertical',
+                    background: '#FFFFFF',
+                    color: '#495057'
+                  }}
                 />
                 <motion.button
-                  className={`btn ${loading || !prompt.trim() ? 'btn-secondary' : 'btn-primary'}`}
                   onClick={handleTrace}
                   disabled={loading || !prompt.trim()}
-                  style={{ width: '100%' }}
+                  style={{ 
+                    width: '100%',
+                    padding: '12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: loading || !prompt.trim() ? 'not-allowed' : 'pointer',
+                    background: loading || !prompt.trim() ? '#6C757D' : '#007BFF',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ duration: 0.1 }}
                 >
@@ -601,11 +848,25 @@ function App() {
                   transition={{ duration: 0.4 }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 className="text-medium" style={{ flex: 1 }}>Controls</h3>
+                    <h3 style={{ 
+                      flex: 1,
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      color: '#495057',
+                      margin: 0
+                    }}>
+                      Controls
+                    </h3>
                     <button
-                      className="btn-ghost"
                       onClick={() => setShowAdvanced(!showAdvanced)}
-                      style={{ padding: '4px 8px' }}
+                      style={{ 
+                        padding: '4px 8px',
+                        background: 'transparent',
+                        border: '1px solid #DEE2E6',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        color: '#495057'
+                      }}
                     >
                       <Settings size={20} />
                     </button>
@@ -614,16 +875,28 @@ function App() {
                   <AnimatePresence>
                     {showAdvanced && (
                       <motion.div
-                        className="collapsible"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <div className="slider-container">
-                          <div className="slider-label">
-                            <span>Layer</span>
-                            <span className="slider-value">{selectedLayer + 1} / {maxLayers}</span>
+                        <div style={{ marginBottom: '20px' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}>
+                            <span style={{ color: '#495057', fontWeight: 'bold' }}>Layer</span>
+                            <span style={{ 
+                              color: '#007BFF', 
+                              fontWeight: 'bold',
+                              background: '#E7F3FF',
+                              padding: '4px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              {selectedLayer + 1} / {maxLayers}
+                            </span>
                           </div>
                           <Slider
                             value={selectedLayer}
@@ -632,35 +905,48 @@ function App() {
                             max={Math.max(0, maxLayers - 1)}
                             step={1}
                             sx={{ 
-                              color: 'var(--accent)',
+                              color: '#007BFF',
                               height: 8,
                               '& .MuiSlider-thumb': {
                                 width: 20,
                                 height: 20,
-                                backgroundColor: 'var(--accent)',
+                                backgroundColor: '#007BFF',
                                 border: 'none',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                                 '&:hover': {
-                                  boxShadow: '0 4px 8px rgba(10, 132, 255, 0.4)',
+                                  boxShadow: '0 4px 8px rgba(0, 123, 255, 0.4)',
                                 },
                               },
                               '& .MuiSlider-track': {
-                                backgroundColor: 'var(--accent)',
+                                backgroundColor: '#007BFF',
                                 border: 'none',
                                 height: 8,
                               },
                               '& .MuiSlider-rail': {
-                                backgroundColor: '#DDD',
+                                backgroundColor: '#DEE2E6',
                                 height: 8,
                               }
                             }}
                           />
                         </div>
 
-                        <div className="slider-container">
-                          <div className="slider-label">
-                            <span>Attention Head</span>
-                            <span className="slider-value">{selectedHead + 1} / {maxHeads}</span>
+                        <div style={{ marginBottom: '20px' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}>
+                            <span style={{ color: '#495057', fontWeight: 'bold' }}>Attention Head</span>
+                            <span style={{ 
+                              color: '#007BFF', 
+                              fontWeight: 'bold',
+                              background: '#E7F3FF',
+                              padding: '4px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              {selectedHead + 1} / {maxHeads}
+                            </span>
                           </div>
                           <Slider
                             value={selectedHead}
@@ -669,62 +955,75 @@ function App() {
                             max={Math.max(0, maxHeads - 1)}
                             step={1}
                             sx={{ 
-                              color: 'var(--accent)',
+                              color: '#007BFF',
                               height: 8,
                               '& .MuiSlider-thumb': {
                                 width: 20,
                                 height: 20,
-                                backgroundColor: 'var(--accent)',
+                                backgroundColor: '#007BFF',
                                 border: 'none',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                                 '&:hover': {
-                                  boxShadow: '0 4px 8px rgba(10, 132, 255, 0.4)',
+                                  boxShadow: '0 4px 8px rgba(0, 123, 255, 0.4)',
                                 },
                               },
                               '& .MuiSlider-track': {
-                                backgroundColor: 'var(--accent)',
+                                backgroundColor: '#007BFF',
                                 border: 'none',
                                 height: 8,
                               },
                               '& .MuiSlider-rail': {
-                                backgroundColor: '#DDD',
+                                backgroundColor: '#DEE2E6',
                                 height: 8,
                               }
                             }}
                           />
                         </div>
 
-                        <div className="slider-container">
-                          <div className="slider-label">
-                            <span>Current Token</span>
-                            <span className="slider-value">{currentTokenIndex + 1} / {tokens.length}</span>
+                        <div style={{ marginBottom: '20px' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                          }}>
+                            <span style={{ color: '#495057', fontWeight: 'bold' }}>Current Token</span>
+                            <span style={{ 
+                              color: '#28A745', 
+                              fontWeight: 'bold',
+                              background: '#E8F5E8',
+                              padding: '4px 8px',
+                              borderRadius: '4px'
+                            }}>
+                              {currentTokenIndex + 1} / {allTokens.length}
+                            </span>
                           </div>
                           <Slider
                             value={currentTokenIndex}
                             onChange={(_, value) => setCurrentTokenIndex(value as number)}
                             min={0}
-                            max={Math.max(0, tokens.length - 1)}
+                            max={Math.max(0, allTokens.length - 1)}
                             step={1}
                             sx={{ 
-                              color: 'var(--success)',
+                              color: '#28A745',
                               height: 8,
                               '& .MuiSlider-thumb': {
                                 width: 20,
                                 height: 20,
-                                backgroundColor: 'var(--success)',
+                                backgroundColor: '#28A745',
                                 border: 'none',
                                 boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                                 '&:hover': {
-                                  boxShadow: '0 4px 8px rgba(48, 209, 88, 0.4)',
+                                  boxShadow: '0 4px 8px rgba(40, 167, 69, 0.4)',
                                 },
                               },
                               '& .MuiSlider-track': {
-                                backgroundColor: 'var(--success)',
+                                backgroundColor: '#28A745',
                                 border: 'none',
                                 height: 8,
                               },
                               '& .MuiSlider-rail': {
-                                backgroundColor: '#DDD',
+                                backgroundColor: '#DEE2E6',
                                 height: 8,
                               }
                             }}
@@ -744,12 +1043,22 @@ function App() {
       <div style={{ 
         flex: 1, 
         padding: '24px',
+        paddingTop: '84px', // Account for fixed header + padding
         overflow: 'auto'
       }}>
         {/* Tab Navigation */}
         {(traceData.length > 0 || loading) && (
           <motion.div 
-            className="tab-container"
+            style={{
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '24px',
+              background: '#FFFFFF',
+              padding: '8px',
+              borderRadius: '12px',
+              border: '1px solid #E9ECEF',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
@@ -759,8 +1068,21 @@ function App() {
               return (
                 <motion.button
                   key={tab.id}
-                  className={`tab ${activeTab === tab.id ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 20px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    background: activeTab === tab.id ? '#007BFF' : 'transparent',
+                    color: activeTab === tab.id ? '#FFFFFF' : '#495057',
+                    transition: 'all 0.2s ease'
+                  }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

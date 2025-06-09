@@ -10,6 +10,7 @@
   --success: #30D158;
   --warning: #FF9F0A;
   --error: #FF3B30;
+  --info: #007aff;
 }
 
 /* Dark mode support with inverted shadows */
@@ -21,6 +22,10 @@
     --secondary: #8E8E93;
     --shadow-light: rgba(0,0,0,0.6);
     --shadow-dark: rgba(255,255,255,0.1);
+    --success: #48d158;
+    --warning: #ffb340;
+    --error: #ff453a;
+    --info: #0a84ff;
   }
 }
 
@@ -32,6 +37,10 @@
   --secondary: #8E8E93;
   --shadow-light: rgba(0,0,0,0.6);
   --shadow-dark: rgba(255,255,255,0.1);
+  --success: #48d158;
+  --warning: #ffb340;
+  --error: #ff453a;
+  --info: #0a84ff;
 }
 
 /* Typography */
@@ -623,4 +632,37 @@ p, label, button {
 .token-hover:hover {
   transform: scale(1.02) translateY(-1px);
   box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-small:active {
+  transform: translateY(0);
+}
+
+.btn-small.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-small.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 } 
