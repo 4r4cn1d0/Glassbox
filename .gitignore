@@ -41,6 +41,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Node.js cache files (webpack, babel, etc.)
+**/node_modules/.cache/
+**/.cache/
+*.cache
+
 # Build outputs
 /build
 /dist
