@@ -22,7 +22,7 @@ for prompt in test_prompts:
     )
     generated = result[0]['generated_text']
     new_text = generated[len(prompt):].strip()
-    print(f"✅ CORRECT: '{prompt}' → '{new_text}'")
+    print(f"CORRECT: '{prompt}' → '{new_text}'")
     print(f"Full: '{generated}'")
 
 print("\n=== This is what our API should return ===") 

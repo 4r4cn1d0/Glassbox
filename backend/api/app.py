@@ -7,6 +7,12 @@ from typing import List, Dict, Any, Optional
 import os
 import numpy as np
 
+# Import core mechanistic interpretability analyzers
+from core.feature_analyzer import FeatureAnalyzer
+from core.circuit_analyzer import CircuitAnalyzer
+from core.intervention_tester import InterventionTester
+from core.safety_analyzer import SafetyAnalyzer
+
 # Disable TensorFlow to avoid Keras conflicts
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
@@ -22,12 +28,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model directly in this file - WORKING IMPLEMENTATION
-print("🔄 Loading GPT-2 Large directly in server...")
+# Load GPT-2 Large model for mechanistic interpretability analysis
+print("Loading GPT-2 Large model for server initialization...")
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 model = GPT2LMHeadModel.from_pretrained('gpt2-large')
 model.eval()
-print("✅ GPT-2 Large loaded in server!")
+print("GPT-2 Large model successfully loaded in server")
+
+# Initialize FeatureAnalyzer for neuron representation analysis
+print("Initializing FeatureAnalyzer...")
+feature_analyzer = FeatureAnalyzer(model, tokenizer)
+print("FeatureAnalyzer successfully initialized")
+
+# Initialize CircuitAnalyzer for information flow tracing
+print("Initializing CircuitAnalyzer...")
+circuit_analyzer = CircuitAnalyzer(model, tokenizer)
+print("CircuitAnalyzer successfully initialized")
+
+# Initialize InterventionTester for causal analysis
+print("Initializing InterventionTester...")
+intervention_tester = InterventionTester(model, tokenizer)
+print("InterventionTester successfully initialized")
+
+# Initialize SafetyAnalyzer for safety-critical behavior analysis
+print("Initializing SafetyAnalyzer...")
+safety_analyzer = SafetyAnalyzer(model, tokenizer)
+print("SafetyAnalyzer successfully initialized")
 
 # Global cache for past_key_values
 generation_cache = {}
@@ -53,6 +79,80 @@ class ComponentHooksRequest(BaseModel):
     token_index: int
     layer: int
     components: List[str]  # ["embed", "pos_embed", "attn", "mlp", "ln", "residual"]
+
+# FeatureAnalyzer API Models
+class FeatureAnalysisRequest(BaseModel):
+    concept_tokens: List[str]
+    layer: int
+    top_k: int = 10
+
+class ConceptAnalysisRequest(BaseModel):
+    concept_pairs: List[List[str]]  # [["happy", "sad"], ["good", "bad"]]
+    layer: int
+    top_k: int = 20
+
+class NeuronAnalysisRequest(BaseModel):
+    neuron_idx: int
+    layer: int
+    test_tokens: List[str]
+
+class LayerRepresentationRequest(BaseModel):
+    tokens: List[str]
+    layer: int
+
+# CircuitAnalyzer API Models
+class InformationFlowRequest(BaseModel):
+    input_tokens: List[str]
+    target_token: str
+    max_depth: int = 3
+
+class CircuitComponentsRequest(BaseModel):
+    concept_tokens: List[str]
+    layer: int
+    min_activation_threshold: float = 0.5
+
+# InterventionTester API Models
+class AttentionHeadAblationRequest(BaseModel):
+    layer_idx: int
+    head_idx: int
+    test_prompts: List[str]
+    max_length: int = 50
+
+class MLPNeuronAblationRequest(BaseModel):
+    layer_idx: int
+    neuron_idx: int
+    test_prompts: List[str]
+    max_length: int = 50
+
+class HeadImportanceRequest(BaseModel):
+    layer_idx: int
+    test_prompts: List[str]
+    max_length: int = 50
+
+class NeuronImportanceRequest(BaseModel):
+    layer_idx: int
+    neuron_indices: List[int]
+    test_prompts: List[str]
+    max_length: int = 50
+
+# SafetyAnalyzer API Models
+class UncertaintyDetectionRequest(BaseModel):
+    prompts: List[str]
+    num_samples: int = 5
+    max_length: int = 50
+
+class ConsistencyAnalysisRequest(BaseModel):
+    prompt_pairs: List[List[str]]  # [["prompt1", "prompt2"], ["prompt3", "prompt4"]]
+    max_length: int = 50
+
+class DeceptionDetectionRequest(BaseModel):
+    prompts: List[str]
+    max_length: int = 50
+
+class SafetyAuditRequest(BaseModel):
+    test_prompts: List[str]
+    consistency_pairs: Optional[List[List[str]]] = None
+    max_length: int = 50
 
 def softmax(logits: torch.Tensor) -> torch.Tensor:
     """Compute softmax probabilities"""
@@ -93,16 +193,16 @@ def generate_tokens_with_cache(prompt: str, max_new_tokens: int = 10, top_k_atte
     """Generate tokens with caching for fast timeline scrubbing"""
     session_id = f"session_{hash(prompt)}_{max_new_tokens}"
     
-    print(f"🔍 Server generating: '{prompt}' (session: {session_id})")
+    print(f"Server generating: '{prompt}' (session: {session_id})")
     
     # Check if we have cached data
     if session_id in generation_cache:
-        print(f"♻️ Using cached generation for session {session_id}")
+        print(f"Using cached generation for session {session_id}")
         return generation_cache[session_id]
     
     # Tokenize prompt
     input_ids = tokenizer.encode(prompt, return_tensors='pt')
-    print(f"🔍 Server tokens: {input_ids.tolist()[0]}")
+    print(f"Server tokens: {input_ids.tolist()[0]}")
     
     trace_data = []
     past_key_values = None
@@ -146,7 +246,7 @@ def generate_tokens_with_cache(prompt: str, max_new_tokens: int = 10, top_k_atte
                     "logit": logits[idx].item()
                 })
             
-            print(f"🏆 SERVER TOP {top_k_tokens}:")
+            print(f"SERVER TOP {top_k_tokens}:")
             for i, token_data in enumerate(top_tokens_data[:5]):  # Show top 5 in logs
                 print(f"  {i+1}. '{token_data['token']}' - {token_data['probability']:.4f}")
             
@@ -154,7 +254,7 @@ def generate_tokens_with_cache(prompt: str, max_new_tokens: int = 10, top_k_atte
             next_token_id = torch.argmax(logits).item()
             next_token = tokenizer.decode([next_token_id])
             
-            print(f"🎯 SERVER CHOSEN: '{next_token}' (ID: {next_token_id})")
+            print(f"CHOSEN: '{next_token}' (ID: {next_token_id})")
             
             # Extract optimized attention weights (top-K only)
             attention_data = []
@@ -217,8 +317,8 @@ def generate_tokens_with_cache(prompt: str, max_new_tokens: int = 10, top_k_atte
     # Print final result
     final_text = tokenizer.decode(input_ids[0].tolist())
     generated_part = final_text[len(prompt):]
-    print(f"\n✅ SERVER FINAL: '{prompt}' → '{generated_part}'")
-    print(f"💾 Cached session {session_id} for timeline scrubbing")
+    print(f"\nFINAL: '{prompt}' → '{generated_part}'")
+    print(f"Cached session {session_id} for timeline scrubbing")
     
     return result
 
@@ -226,7 +326,7 @@ def generate_tokens_with_cache(prompt: str, max_new_tokens: int = 10, top_k_atte
 async def trace_generation(request: TraceRequest):
     """Generate tokens with attention tracing and caching"""
     try:
-        print(f"🌐 API CALL: prompt='{request.prompt}', max_new_tokens={request.max_new_tokens}")
+        print(f"API CALL: prompt='{request.prompt}', max_new_tokens={request.max_new_tokens}")
         
         # Generate tokens with caching
         result = generate_tokens_with_cache(
@@ -236,10 +336,10 @@ async def trace_generation(request: TraceRequest):
             request.top_k_tokens
         )
         
-        print(f"🌐 API RESPONSE: {len(result['trace_data'])} tokens generated")
+        print(f"API RESPONSE: {len(result['trace_data'])} tokens generated")
         return result
     except Exception as e:
-        print(f"🌐 API ERROR: {e}")
+        print(f"API ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/scrub")
@@ -261,7 +361,7 @@ async def scrub_timeline(request: ScrubRequest) -> Dict[str, Any]:
             "current_index": request.token_index
         }
     except Exception as e:
-        print(f"🌐 SCRUB ERROR: {e}")
+        print(f"SCRUB ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/embeddings/{session_id}")
@@ -289,7 +389,14 @@ async def root():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy", "mode": "real_transformer"}
+    return {
+        "status": "healthy", 
+        "mode": "real_transformer",
+        "feature_analyzer_ready": True,
+        "circuit_analyzer_ready": True,
+        "intervention_tester_ready": True,
+        "safety_analyzer_ready": True
+    }
 
 @app.post("/api/logit-lens")
 async def logit_lens(request: LogitLensRequest):
@@ -374,7 +481,7 @@ async def logit_lens(request: LogitLensRequest):
         }
         
     except Exception as e:
-        print(f"🌐 LOGIT LENS ERROR: {e}")
+        print(f"LOGIT LENS ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/component-hooks")
@@ -510,7 +617,413 @@ async def component_hooks(request: ComponentHooksRequest):
         }
         
     except Exception as e:
-        print(f"🌐 COMPONENT HOOKS ERROR: {e}")
+        print(f"COMPONENT HOOKS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# FEATURE ANALYZER ENDPOINTS - MECHANISTIC INTERPRETABILITY
+# ============================================================================
+
+@app.post("/api/analyze/features")
+async def analyze_features(request: FeatureAnalysisRequest):
+    """
+    Find neurons that activate strongly for specific concepts
+    This is REAL mechanistic interpretability - finding what neurons represent
+    """
+    try:
+        print(f"FEATURE ANALYSIS: Finding neurons for concept {request.concept_tokens} at layer {request.layer}")
+        
+        result = feature_analyzer.find_feature_neurons(
+            concept_tokens=request.concept_tokens,
+            layer=request.layer,
+            top_k=request.top_k
+        )
+        
+        print(f"Found {len(result.get('top_neurons', []))} feature neurons")
+        return result
+        
+    except Exception as e:
+        print(f"FEATURE ANALYSIS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/concepts")
+async def analyze_concepts(request: ConceptAnalysisRequest):
+    """
+    Find neurons that distinguish between concept pairs
+    e.g., neurons that respond to "happy" vs "sad"
+    """
+    try:
+        print(f"CONCEPT ANALYSIS: Finding concept-distinguishing neurons for {len(request.concept_pairs)} pairs at layer {request.layer}")
+        
+        # Convert list of lists to list of tuples for the analyzer
+        concept_pairs = [(pair[0], pair[1]) for pair in request.concept_pairs]
+        
+        result = feature_analyzer.find_concept_neurons(
+            concept_pairs=concept_pairs,
+            layer=request.layer,
+            top_k=request.top_k
+        )
+        
+        print(f"Found {len(result.get('concept_distinguishing_neurons', []))} concept-distinguishing neurons")
+        return result
+        
+    except Exception as e:
+        print(f"CONCEPT ANALYSIS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/neuron")
+async def analyze_neuron(request: NeuronAnalysisRequest):
+    """
+    Analyze what a specific neuron responds to
+    Deep dive into individual neuron behavior
+    """
+    try:
+        print(f"NEURON ANALYSIS: Analyzing neuron {request.neuron_idx} at layer {request.layer}")
+        
+        result = feature_analyzer.analyze_single_neuron(
+            neuron_idx=request.neuron_idx,
+            layer=request.layer,
+            test_tokens=request.test_tokens
+        )
+        
+        print(f"Neuron {request.neuron_idx} analysis complete")
+        return result
+        
+    except Exception as e:
+        print(f"NEURON ANALYSIS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/layer-representations")
+async def analyze_layer_representations(request: LayerRepresentationRequest):
+    """
+    Get comprehensive layer representations including MLP, attention, and layer norm
+    Full layer analysis for mechanistic interpretability
+    """
+    try:
+        print(f"LAYER REPRESENTATIONS: Analyzing layer {request.layer} for {len(request.tokens)} tokens")
+        
+        result = feature_analyzer.get_layer_representations(
+            tokens=request.tokens,
+            layer=request.layer
+        )
+        
+        print(f"Layer {request.layer} representation analysis complete")
+        return result
+        
+    except Exception as e:
+        print(f"LAYER REPRESENTATIONS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analyze/model-info")
+async def get_model_info():
+    """
+    Get information about the model architecture for the FeatureAnalyzer
+    """
+    try:
+        return {
+            "model_type": "GPT-2 Large",
+            "layers": feature_analyzer.layer_count,
+            "hidden_size": feature_analyzer.hidden_size,
+            "feature_analyzer_ready": True
+        }
+    except Exception as e:
+        print(f"MODEL INFO ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# CIRCUIT ANALYZER ENDPOINTS - MECHANISTIC INTERPRETABILITY
+# ============================================================================
+
+@app.post("/api/analyze/information-flow")
+async def trace_information_flow(request: InformationFlowRequest):
+    """
+    Trace how information flows from input tokens to target token
+    This is REAL mechanistic interpretability - understanding the computation
+    """
+    try:
+        print(f"INFORMATION FLOW: Tracing flow from {request.input_tokens} to '{request.target_token}' (depth: {request.max_depth})")
+        
+        result = circuit_analyzer.trace_information_flow(
+            input_tokens=request.input_tokens,
+            target_token=request.target_token,
+            max_depth=request.max_depth
+        )
+        
+        if 'error' in result:
+            print(f"INFORMATION FLOW ERROR: {result['error']}")
+            raise HTTPException(status_code=500, detail=result['error'])
+        
+        print(f"Traced information flow through {len(result.get('layers_analyzed', []))} layers")
+        return result
+        
+    except Exception as e:
+        print(f"INFORMATION FLOW ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/circuit-components")
+async def find_circuit_components(request: CircuitComponentsRequest):
+    """
+    Find which neurons and attention heads work together as a circuit
+    This identifies functional units in the model
+    """
+    try:
+        print(f"CIRCUIT COMPONENTS: Finding components for concept {request.concept_tokens} at layer {request.layer}")
+        
+        result = circuit_analyzer.find_circuit_components(
+            concept_tokens=request.concept_tokens,
+            layer=request.layer,
+            min_activation_threshold=request.min_activation_threshold
+        )
+        
+        if 'error' in result:
+            print(f"CIRCUIT COMPONENTS ERROR: {result['error']}")
+            raise HTTPException(status_code=500, detail=result['error'])
+        
+        active_neurons = result.get('circuit_stats', {}).get('active_neurons', 0)
+        print(f"Found {active_neurons} active neurons in circuit")
+        return result
+        
+    except Exception as e:
+        print(f"CIRCUIT COMPONENTS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analyze/circuit-info")
+async def get_circuit_info():
+    """
+    Get information about the model architecture for the CircuitAnalyzer
+    """
+    try:
+        return {
+            "model_type": "GPT-2 Large",
+            "layers": circuit_analyzer.layer_count,
+            "hidden_size": circuit_analyzer.hidden_size,
+            "num_heads": circuit_analyzer.num_heads,
+            "circuit_analyzer_ready": True
+        }
+    except Exception as e:
+        print(f"CIRCUIT INFO ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# INTERVENTION TESTER ENDPOINTS - MECHANISTIC INTERPRETABILITY
+# ============================================================================
+
+@app.post("/api/analyze/ablate-attention-head")
+async def ablate_attention_head(request: AttentionHeadAblationRequest):
+    """
+    Ablate (zero out) a specific attention head and measure its impact
+    This is REAL mechanistic interpretability - testing causal relationships
+    """
+    try:
+        print(f"ATTENTION HEAD ABLATION: Ablating head {request.head_idx} at layer {request.layer_idx}")
+
+        result = intervention_tester.ablate_attention_head(
+            layer_idx=request.layer_idx,
+            head_idx=request.head_idx,
+            test_prompts=request.test_prompts,
+            max_length=request.max_length
+        )
+
+        print(f"Attention head ablation complete")
+        return result
+
+    except Exception as e:
+        print(f"ATTENTION HEAD ABLATION ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/ablate-mlp-neuron")
+async def ablate_mlp_neuron(request: MLPNeuronAblationRequest):
+    """
+    Ablate (zero out) a specific MLP neuron and measure its impact
+    This tests the importance of individual neurons in the model
+    """
+    try:
+        print(f"MLP NEURON ABLATION: Ablating neuron {request.neuron_idx} at layer {request.layer_idx}")
+
+        result = intervention_tester.ablate_mlp_neuron(
+            layer_idx=request.layer_idx,
+            neuron_idx=request.neuron_idx,
+            test_prompts=request.test_prompts,
+            max_length=request.max_length
+        )
+
+        print(f"MLP neuron ablation complete")
+        return result
+
+    except Exception as e:
+        print(f"MLP NEURON ABLATION ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/test-head-importance")
+async def test_head_importance(request: HeadImportanceRequest):
+    """
+    Test the importance of all attention heads in a layer
+    This ranks heads by their impact on model outputs
+    """
+    try:
+        print(f"HEAD IMPORTANCE TESTING: Testing layer {request.layer_idx}")
+
+        result = intervention_tester.test_attention_head_importance(
+            layer_idx=request.layer_idx,
+            test_prompts=request.test_prompts,
+            max_length=request.max_length
+        )
+
+        print(f"Head importance testing complete")
+        return result
+
+    except Exception as e:
+        print(f"HEAD IMPORTANCE TESTING ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/test-neuron-importance")
+async def test_neuron_importance(request: NeuronImportanceRequest):
+    """
+    Test the importance of specific neurons in a layer
+    This ranks neurons by their impact on model outputs
+    """
+    try:
+        print(f"NEURON IMPORTANCE TESTING: Testing {len(request.neuron_indices)} neurons at layer {request.layer_idx}")
+
+        result = intervention_tester.test_neuron_importance(
+            layer_idx=request.layer_idx,
+            neuron_indices=request.neuron_indices,
+            test_prompts=request.test_prompts,
+            max_length=request.max_length
+        )
+
+        print(f"Neuron importance testing complete")
+        return result
+
+    except Exception as e:
+        print(f"NEURON IMPORTANCE TESTING ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analyze/intervention-info")
+async def get_intervention_info():
+    """
+    Get information about the model architecture for the InterventionTester
+    """
+    try:
+        return {
+            "model_type": "GPT-2 Large",
+            "layers": intervention_tester.layer_count,
+            "hidden_size": intervention_tester.hidden_size,
+            "num_heads": intervention_tester.num_heads,
+            "intervention_tester_ready": True
+        }
+    except Exception as e:
+        print(f"INTERVENTION INFO ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# SafetyAnalyzer API Endpoints
+@app.post("/api/analyze/detect-uncertainty")
+async def detect_uncertainty(request: UncertaintyDetectionRequest):
+    """
+    Detect uncertainty in model responses by analyzing multiple samples
+    This helps identify when the model is uncertain about its outputs
+    """
+    try:
+        print(f"UNCERTAINTY DETECTION: Analyzing {len(request.prompts)} prompts with {request.num_samples} samples each")
+
+        result = safety_analyzer.detect_uncertainty(
+            prompts=request.prompts,
+            num_samples=request.num_samples,
+            max_length=request.max_length
+        )
+
+        print(f"Uncertainty detection complete")
+        return result
+
+    except Exception as e:
+        print(f"UNCERTAINTY DETECTION ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/analyze-consistency")
+async def analyze_consistency(request: ConsistencyAnalysisRequest):
+    """
+    Analyze consistency between related prompt pairs
+    This helps identify inconsistencies that could indicate safety issues
+    """
+    try:
+        print(f"CONSISTENCY ANALYSIS: Analyzing {len(request.prompt_pairs)} prompt pairs")
+
+        result = safety_analyzer.analyze_consistency(
+            prompt_pairs=request.prompt_pairs,
+            max_length=request.max_length
+        )
+
+        print(f"Consistency analysis complete")
+        return result
+
+    except Exception as e:
+        print(f"CONSISTENCY ANALYSIS ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/detect-deception")
+async def detect_deception(request: DeceptionDetectionRequest):
+    """
+    Detect potential deception or misleading outputs
+    This helps identify safety-critical failure modes
+    """
+    try:
+        print(f"DECEPTION DETECTION: Analyzing {len(request.prompts)} prompts")
+
+        result = safety_analyzer.detect_deception(
+            prompts=request.prompts,
+            max_length=request.max_length
+        )
+
+        print(f"Deception detection complete")
+        return result
+
+    except Exception as e:
+        print(f"DECEPTION DETECTION ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analyze/safety-audit")
+async def run_safety_audit(request: SafetyAuditRequest):
+    """
+    Run a comprehensive safety audit combining all safety metrics
+    This provides an overall safety assessment of the model
+    """
+    try:
+        print(f"SAFETY AUDIT: Running comprehensive safety analysis")
+
+        result = safety_analyzer.run_safety_audit(
+            test_prompts=request.test_prompts,
+            consistency_pairs=request.consistency_pairs,
+            max_length=request.max_length
+        )
+
+        print(f"Safety audit complete")
+        return result
+
+    except Exception as e:
+        print(f"SAFETY AUDIT ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/analyze/safety-info")
+async def get_safety_info():
+    """
+    Get information about the model architecture for the SafetyAnalyzer
+    """
+    try:
+        return {
+            "model_type": "GPT-2 Large",
+            "layers": safety_analyzer.layer_count,
+            "hidden_size": safety_analyzer.hidden_size,
+            "num_heads": safety_analyzer.num_heads,
+            "safety_analyzer_ready": True,
+            "safety_features": [
+                "Uncertainty Detection",
+                "Consistency Analysis", 
+                "Deception Detection",
+                "Comprehensive Safety Audit"
+            ]
+        }
+    except Exception as e:
+        print(f"SAFETY INFO ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

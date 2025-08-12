@@ -25,7 +25,7 @@ with torch.no_grad():
     probs = torch.softmax(logits, dim=-1)
     top_probs, top_indices = torch.topk(probs, 10)
     
-    print(f"\n🏆 TOP 10 MOST LIKELY NEXT TOKENS:")
+    print(f"\nTOP 10 MOST LIKELY NEXT TOKENS:")
     for i, (prob, idx) in enumerate(zip(top_probs, top_indices)):
         token = tokenizer.decode([idx.item()])
         print(f"  {i+1}. '{token}' (ID: {idx.item()}) - {prob.item():.4f}")
@@ -33,11 +33,11 @@ with torch.no_grad():
     # What does greedy decoding pick?
     next_token_id = torch.argmax(logits).item()
     next_token = tokenizer.decode([next_token_id]) 
-    print(f"\n🎯 GREEDY CHOICE: '{next_token}' (ID: {next_token_id})")
+    print(f"\nGREEDY CHOICE: '{next_token}' (ID: {next_token_id})")
     
     # What should "Hello" + next_token look like?
     new_ids = torch.cat([input_ids, torch.tensor([[next_token_id]])], dim=1)
     full_text = tokenizer.decode(new_ids[0].tolist())
-    print(f"📝 FULL TEXT: '{full_text}'")
+    print(f"FULL TEXT: '{full_text}'")
 
 print("\n=== This is what we SHOULD be generating ===") 

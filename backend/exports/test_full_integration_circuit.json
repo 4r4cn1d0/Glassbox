@@ -1,0 +1,94 @@
+{
+  "input_tokens": [
+    "The",
+    "cat",
+    "is"
+  ],
+  "target_token": "happy",
+  "max_depth": 3,
+  "layers_analyzed": [
+    0,
+    1,
+    2
+  ],
+  "information_flow": {
+    "0": {
+      "layer": 0,
+      "input_activations_shape": [
+        3,
+        1280
+      ],
+      "target_activation_shape": [
+        1280
+      ],
+      "avg_correlation": 0.4133155741695603,
+      "flow_strength": 0.4419715924023473,
+      "input_magnitude": 57.40754318237305,
+      "target_magnitude": 25.37250328063965,
+      "information_retention": 0.4133155741695603
+    },
+    "1": {
+      "layer": 1,
+      "input_activations_shape": [
+        3,
+        1280
+      ],
+      "target_activation_shape": [
+        1280
+      ],
+      "avg_correlation": 0.47009838617365407,
+      "flow_strength": 0.4443547850536116,
+      "input_magnitude": 92.85079193115234,
+      "target_magnitude": 41.25869369506836,
+      "information_retention": 0.47009838617365407
+    },
+    "2": {
+      "layer": 2,
+      "input_activations_shape": [
+        3,
+        1280
+      ],
+      "target_activation_shape": [
+        1280
+      ],
+      "avg_correlation": 0.43090056980333746,
+      "flow_strength": 0.46323397567184327,
+      "input_magnitude": 109.26922607421875,
+      "target_magnitude": 50.617218017578125,
+      "information_retention": 0.43090056980333746
+    }
+  },
+  "critical_paths": [
+    {
+      "path_id": 1,
+      "criticality_rank": 1,
+      "layers": [
+        2
+      ],
+      "flow_strength": 0.46323397567184327,
+      "correlation": 0.43090056980333746,
+      "path_type": "moderate_flow"
+    },
+    {
+      "path_id": 2,
+      "criticality_rank": 2,
+      "layers": [
+        1
+      ],
+      "flow_strength": 0.4443547850536116,
+      "correlation": 0.47009838617365407,
+      "path_type": "moderate_flow"
+    },
+    {
+      "path_id": 3,
+      "criticality_rank": 3,
+      "layers": [
+        0
+      ],
+      "flow_strength": 0.4419715924023473,
+      "correlation": 0.4133155741695603,
+      "path_type": "moderate_flow"
+    }
+  ],
+  "attention_analysis": {}
+}

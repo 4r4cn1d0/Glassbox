@@ -16,19 +16,19 @@ class GPT2LargeTracer:
         self.model = GPT2LMHeadModel.from_pretrained('gpt2-large')
         self.model.eval()
         
-        print(f"✅ GPT-2 Large loaded successfully!")
-        print(f"📊 Model size: {sum(p.numel() for p in self.model.parameters())/1e6:.1f}M parameters")
-        print(f"🧠 Architecture: {self.model.config.n_layer} layers, {self.model.config.n_head} heads")
+        print(f"GPT-2 Large loaded successfully!")
+        print(f"Model size: {sum(p.numel() for p in self.model.parameters())/1e6:.1f}M parameters")
+        print(f"Architecture: {self.model.config.n_layer} layers, {self.model.config.n_head} heads")
         
     def trace_generation(self, prompt: str, max_new_tokens: int = 10) -> List[Dict[str, Any]]:
         """
         Generate tokens step by step - EXACTLY like the working standalone test
         """
-        print(f"🔍 Input prompt: '{prompt}'")
+        print(f"Input prompt: '{prompt}'")
         
         # Tokenize prompt - EXACTLY like working test
         input_ids = self.tokenizer.encode(prompt, return_tensors='pt')
-        print(f"🔍 Input tokens: {input_ids.tolist()[0]}")
+        print(f"Input tokens: {input_ids.tolist()[0]}")
         
         trace_data = []
         
@@ -44,7 +44,7 @@ class GPT2LargeTracer:
                 probs = torch.softmax(logits, dim=-1)
                 top_probs, top_indices = torch.topk(probs, 5)
                 
-                print(f"🏆 TOP 5 TOKENS:")
+                print(f"TOP 5 TOKENS:")
                 for i, (prob, idx) in enumerate(zip(top_probs, top_indices)):
                     token = self.tokenizer.decode([idx.item()])
                     print(f"  {i+1}. '{token}' (ID: {idx.item()}) - {prob.item():.4f}")
@@ -53,7 +53,7 @@ class GPT2LargeTracer:
                 next_token_id = torch.argmax(logits).item()
                 next_token = self.tokenizer.decode([next_token_id])
                 
-                print(f"🎯 CHOSEN: '{next_token}' (ID: {next_token_id})")
+                print(f"CHOSEN: '{next_token}' (ID: {next_token_id})")
                 
                 # Get attention weights (simplified for now)
                 attention_data = []
@@ -108,7 +108,7 @@ class GPT2LargeTracer:
         # Print final result
         final_text = self.tokenizer.decode(input_ids[0].tolist())
         generated_part = final_text[len(prompt):]
-        print(f"\n✅ FINAL RESULT: '{prompt}' → '{generated_part}'")
+        print(f"\nFINAL RESULT: '{prompt}' → '{generated_part}'")
         
         return trace_data
 

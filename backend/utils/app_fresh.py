@@ -22,11 +22,11 @@ app.add_middleware(
 )
 
 # Load model directly in this file
-print("🔄 Loading GPT-2 Large directly in server...")
+print("Loading GPT-2 Large directly in server...")
 tokenizer = GPT2Tokenizer.from_pretrained('gpt2-large')
 model = GPT2LMHeadModel.from_pretrained('gpt2-large')
 model.eval()
-print("✅ GPT-2 Large loaded in server!")
+print("GPT-2 Large loaded in server!")
 
 class TraceRequest(BaseModel):
     prompt: str
@@ -34,11 +34,11 @@ class TraceRequest(BaseModel):
 
 def generate_tokens(prompt: str, max_new_tokens: int = 10) -> List[Dict[str, Any]]:
     """Generate tokens directly in server"""
-    print(f"🔍 Server generating: '{prompt}'")
+    print(f"Server generating: '{prompt}'")
     
     # Tokenize prompt
     input_ids = tokenizer.encode(prompt, return_tensors='pt')
-    print(f"🔍 Server tokens: {input_ids.tolist()[0]}")
+    print(f"Server tokens: {input_ids.tolist()[0]}")
     
     trace_data = []
     
@@ -54,7 +54,7 @@ def generate_tokens(prompt: str, max_new_tokens: int = 10) -> List[Dict[str, Any
             probs = torch.softmax(logits, dim=-1)
             top_probs, top_indices = torch.topk(probs, 5)
             
-            print(f"🏆 SERVER TOP 5:")
+            print(f"SERVER TOP 5:")
             for i, (prob, idx) in enumerate(zip(top_probs, top_indices)):
                 token = tokenizer.decode([idx.item()])
                 print(f"  {i+1}. '{token}' (ID: {idx.item()}) - {prob.item():.4f}")
@@ -63,7 +63,7 @@ def generate_tokens(prompt: str, max_new_tokens: int = 10) -> List[Dict[str, Any
             next_token_id = torch.argmax(logits).item()
             next_token = tokenizer.decode([next_token_id])
             
-            print(f"🎯 SERVER CHOSEN: '{next_token}' (ID: {next_token_id})")
+            print(f"SERVER CHOSEN: '{next_token}' (ID: {next_token_id})")
             
             # Store trace data
             trace_data.append({
@@ -97,19 +97,19 @@ def generate_tokens(prompt: str, max_new_tokens: int = 10) -> List[Dict[str, Any
     # Print final result
     final_text = tokenizer.decode(input_ids[0].tolist())
     generated_part = final_text[len(prompt):]
-    print(f"\n✅ SERVER FINAL: '{prompt}' → '{generated_part}'")
+    print(f"\nSERVER FINAL: '{prompt}' → '{generated_part}'")
     
     return trace_data
 
 @app.post("/api/trace")
 async def trace_endpoint(request: TraceRequest) -> List[Dict[str, Any]]:
     try:
-        print(f"🌐 API CALL: prompt='{request.prompt}', max_new_tokens={request.max_new_tokens}")
+        print(f"API CALL: prompt='{request.prompt}', max_new_tokens={request.max_new_tokens}")
         trace_data = generate_tokens(request.prompt, request.max_new_tokens)
-        print(f"🌐 API RESPONSE: {len(trace_data)} tokens generated")
+        print(f"API RESPONSE: {len(trace_data)} tokens generated")
         return trace_data
     except Exception as e:
-        print(f"🌐 API ERROR: {e}")
+        print(f"API ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")

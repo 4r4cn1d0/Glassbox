@@ -1,0 +1,23 @@
+{
+  "layer_idx": 6,
+  "total_neurons_tested": 2,
+  "neuron_importance": {
+    "neuron_248": {
+      "importance_score": 0.0,
+      "outputs_changed": 0,
+      "change_rate": 0.0,
+      "avg_token_change": 0.0,
+      "avg_semantic_change": 0.0
+    },
+    "neuron_792": {
+      "importance_score": 0.0,
+      "outputs_changed": 0,
+      "change_rate": 0.0,
+      "avg_token_change": 0.0,
+      "avg_semantic_change": 0.0
+    }
+  },
+  "most_important_neuron": "neuron_248",
+  "least_important_neuron": "neuron_792",
+  "timestamp": "2025-08-11T17:46:30.074785"
+}

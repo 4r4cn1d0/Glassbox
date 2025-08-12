@@ -1,4 +1,4 @@
-# 🚀 Glassbox SaaS Transformation Roadmap
+# Glassbox SaaS Transformation Roadmap
 
 ## Current Architecture vs. SaaS Requirements
 
@@ -20,9 +20,9 @@
 
 ---
 
-## 🏗️ Phase 1: Core Infrastructure (Months 1-2)
+## Phase 1: Core Infrastructure (Months 1-2)
 
-### **1.1 Backend Architecture Redesign**
+### 1.1 Backend Architecture Redesign
 
 ```python
 # New Microservices Structure:
@@ -56,7 +56,7 @@
 # - User behavior analysis
 ```
 
-### **1.2 Database Architecture**
+### 1.2 Database Architecture
 
 ```sql
 -- Primary Database (PostgreSQL)
@@ -98,14 +98,9 @@ CREATE TABLE api_calls (
 // Redis Cache Structure
 // Session caching with TTL
 SET session:{session_id}:data "{json_data}" EX 3600
-SET session:{session_id}:embeddings "{embeddings_data}" EX 3600
-SET user:{user_id}:quota {remaining_calls} EX 86400
-
-// Rate limiting
-SET rate_limit:{user_id}:{window} {call_count} EX 60
 ```
 
-### **1.3 Model Serving Infrastructure**
+### 1.3 Model Serving Infrastructure
 
 ```python
 # Separate Model Service (using Ray Serve or TorchServe)
@@ -141,9 +136,9 @@ def process_llm_request(session_id, prompt, user_id):
 
 ---
 
-## 🔐 Phase 2: User Management & Security (Month 2)
+## Phase 2: User Management & Security (Month 2)
 
-### **2.1 Authentication System**
+### 2.1 Authentication System
 
 ```python
 # JWT-based auth with FastAPI
@@ -173,7 +168,7 @@ class AuthService:
         pass
 ```
 
-### **2.2 Subscription Tiers**
+### 2.2 Subscription Tiers
 
 ```python
 SUBSCRIPTION_TIERS = {
@@ -209,9 +204,9 @@ SUBSCRIPTION_TIERS = {
 
 ---
 
-## ⚡ Phase 3: Scalability & Performance (Month 3)
+## Phase 3: Scalability & Performance (Month 3)
 
-### **3.1 Caching Strategy**
+### 3.1 Caching Strategy
 
 ```python
 # Multi-layer caching
@@ -241,7 +236,7 @@ class CacheService:
         pass
 ```
 
-### **3.2 Auto-scaling Infrastructure**
+### 3.2 Auto-scaling Infrastructure
 
 ```yaml
 # Kubernetes deployment
@@ -290,9 +285,9 @@ spec:
 
 ---
 
-## 🌐 Phase 4: Frontend Transformation (Month 3-4)
+## Phase 4: Frontend Transformation (Month 3-4)
 
-### **4.1 Multi-tenancy & Collaboration**
+### 4.1 Multi-tenancy & Collaboration
 
 ```typescript
 // New React contexts and state management
@@ -336,7 +331,7 @@ class CollaborationService {
 }
 ```
 
-### **4.2 Dashboard & Analytics**
+### 4.2 Dashboard & Analytics
 
 ```typescript
 // New dashboard components
@@ -365,9 +360,9 @@ const Dashboard: React.FC = () => {
 
 ---
 
-## 💰 Phase 5: Monetization & Business Logic (Month 4-5)
+## Phase 5: Monetization & Business Logic (Month 4-5)
 
-### **5.1 Billing Integration**
+### 5.1 Billing Integration
 
 ```python
 # Stripe integration
@@ -401,7 +396,7 @@ class BillingService:
         pass
 ```
 
-### **5.2 API Marketplace**
+### 5.2 API Marketplace
 
 ```python
 # Public API for enterprise customers
@@ -431,9 +426,9 @@ async def analyze_prompt(
 
 ---
 
-## 📊 Phase 6: Analytics & Monitoring (Month 5-6)
+## Phase 6: Analytics & Monitoring (Month 5-6)
 
-### **6.1 Application Monitoring**
+### 6.1 Application Monitoring
 
 ```python
 # Observability stack
@@ -467,7 +462,7 @@ class MonitoringService:
         return result
 ```
 
-### **6.2 Business Analytics**
+### 6.2 Business Analytics
 
 ```python
 # User behavior tracking
@@ -488,9 +483,9 @@ class AnalyticsService:
 
 ---
 
-## 🚀 Deployment & Infrastructure
+## Deployment & Infrastructure
 
-### **Cloud Architecture (AWS/GCP)**
+### Cloud Architecture (AWS/GCP)
 
 ```yaml
 # Infrastructure as Code (Terraform)
@@ -534,23 +529,23 @@ resource "aws_elasticache_replication_group" "sessions" {
 
 ---
 
-## 💡 Key Scaling Considerations
+## Key Scaling Considerations
 
-### **Performance Optimizations**
+### Performance Optimizations
 1. **Model Quantization**: 8-bit/16-bit models for faster inference
 2. **Batch Processing**: Group similar requests
 3. **CDN**: Cache static assets and common results
 4. **Database Sharding**: Split users across multiple DB instances
 5. **Read Replicas**: Separate read/write workloads
 
-### **Security Enhancements**
+### Security Enhancements
 1. **WAF**: Web Application Firewall
 2. **DDoS Protection**: CloudFlare/AWS Shield
 3. **Data Encryption**: At rest and in transit
 4. **Compliance**: SOC2, GDPR, HIPAA ready
 5. **Audit Logging**: Complete action trails
 
-### **Cost Optimization**
+### Cost Optimization
 1. **Spot Instances**: For model workers
 2. **Auto-shutdown**: Idle resource cleanup
 3. **Storage Tiering**: S3 Intelligent Tiering
@@ -558,15 +553,15 @@ resource "aws_elasticache_replication_group" "sessions" {
 
 ---
 
-## 📈 Success Metrics & KPIs
+## Success Metrics & KPIs
 
-### **Technical Metrics**
+### Technical Metrics
 - API response time < 100ms (excluding model inference)
 - Model inference time < 5 seconds
 - 99.9% uptime SLA
 - Auto-scaling response time < 30 seconds
 
-### **Business Metrics**
+### Business Metrics
 - Monthly Recurring Revenue (MRR)
 - Customer Acquisition Cost (CAC)
 - Customer Lifetime Value (CLV)
@@ -575,7 +570,7 @@ resource "aws_elasticache_replication_group" "sessions" {
 
 ---
 
-## 🎯 Timeline Summary
+## Timeline Summary
 
 **Month 1-2**: Core infrastructure, authentication, basic multi-tenancy
 **Month 3**: Performance optimization, caching, auto-scaling
@@ -585,4 +580,4 @@ resource "aws_elasticache_replication_group" "sessions" {
 
 **Estimated Budget**: $50K-100K for initial development + $5K-20K monthly infrastructure costs
 
-This roadmap transforms your single-user debugger into a scalable SaaS platform ready for thousands of concurrent users! 🚀 
+This roadmap transforms your single-user debugger into a scalable SaaS platform ready for thousands of concurrent users. 

@@ -1,0 +1,143 @@
+{
+  "information_flow": {
+    "input_tokens": [
+      "The",
+      "cat",
+      "is"
+    ],
+    "target_token": "happy",
+    "max_depth": 3,
+    "layers_analyzed": [
+      0,
+      1,
+      2
+    ],
+    "information_flow": {
+      "0": {
+        "layer": 0,
+        "input_activations_shape": [
+          3,
+          1280
+        ],
+        "target_activation_shape": [
+          1280
+        ],
+        "avg_correlation": 0.4133155741695603,
+        "flow_strength": 0.4419715924023473,
+        "input_magnitude": 57.40754318237305,
+        "target_magnitude": 25.37250328063965,
+        "information_retention": 0.4133155741695603
+      },
+      "1": {
+        "layer": 1,
+        "input_activations_shape": [
+          3,
+          1280
+        ],
+        "target_activation_shape": [
+          1280
+        ],
+        "avg_correlation": 0.47009838617365407,
+        "flow_strength": 0.4443547850536116,
+        "input_magnitude": 92.85079193115234,
+        "target_magnitude": 41.25869369506836,
+        "information_retention": 0.47009838617365407
+      },
+      "2": {
+        "layer": 2,
+        "input_activations_shape": [
+          3,
+          1280
+        ],
+        "target_activation_shape": [
+          1280
+        ],
+        "avg_correlation": 0.43090056980333746,
+        "flow_strength": 0.46323397567184327,
+        "input_magnitude": 109.26922607421875,
+        "target_magnitude": 50.617218017578125,
+        "information_retention": 0.43090056980333746
+      }
+    },
+    "critical_paths": [
+      {
+        "path_id": 1,
+        "criticality_rank": 1,
+        "layers": [
+          2
+        ],
+        "flow_strength": 0.46323397567184327,
+        "correlation": 0.43090056980333746,
+        "path_type": "moderate_flow"
+      },
+      {
+        "path_id": 2,
+        "criticality_rank": 2,
+        "layers": [
+          1
+        ],
+        "flow_strength": 0.4443547850536116,
+        "correlation": 0.47009838617365407,
+        "path_type": "moderate_flow"
+      },
+      {
+        "path_id": 3,
+        "criticality_rank": 3,
+        "layers": [
+          0
+        ],
+        "flow_strength": 0.4419715924023473,
+        "correlation": 0.4133155741695603,
+        "path_type": "moderate_flow"
+      }
+    ],
+    "attention_analysis": {}
+  },
+  "circuit_components": {
+    "layer": 6,
+    "concept_tokens": [
+      "The",
+      "weather",
+      "is",
+      "sunny"
+    ],
+    "circuit_stats": {
+      "total_neurons": 1280,
+      "active_neurons": 6,
+      "activation_density": 0.0046875,
+      "mean_activation": -0.00710240239277482,
+      "activation_std": 0.5944669842720032
+    },
+    "active_neurons": [
+      243,
+      248,
+      254,
+      792,
+      923,
+      1089
+    ],
+    "neuron_clusters": [
+      {
+        "cluster_id": 1,
+        "neurons": [
+          243,
+          254,
+          923
+        ],
+        "size": 3,
+        "mean_correlation": 0.9434547257914435
+      },
+      {
+        "cluster_id": 2,
+        "neurons": [
+          248,
+          792
+        ],
+        "size": 2,
+        "mean_correlation": 0.9624283914443883
+      }
+    ],
+    "attention_analysis": {},
+    "activation_threshold": 0.5
+  }
+}

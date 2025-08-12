@@ -1,0 +1,135 @@
+{
+  "concept_tokens": [
+    "happy",
+    "joy",
+    "smile"
+  ],
+  "layer": 6,
+  "top_neurons": [
+    248,
+    792,
+    897,
+    929,
+    33
+  ],
+  "activation_strengths": [
+    16.5069667249918,
+    2.8236469626426697,
+    1.1127909620602925,
+    0.41713523864746094,
+    0.403874933719635
+  ],
+  "top_neurons_analysis": [
+    {
+      "neuron_index": 248,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy",
+        "joy"
+      ],
+      "top_activation_values": [
+        33.86310958862305,
+        0.0
+      ],
+      "activation_stats": {
+        "mean": 16.931554794311523,
+        "std": 16.931554794311523,
+        "max": 33.86310958862305,
+        "min": 0.0,
+        "range": 33.86310958862305
+      },
+      "neuron_type": "high_variance",
+      "responsiveness_score": 1.9999999988187736
+    },
+    {
+      "neuron_index": 792,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy",
+        "joy"
+      ],
+      "top_activation_values": [
+        6.43802547454834,
+        0.0
+      ],
+      "activation_stats": {
+        "mean": 3.21901273727417,
+        "std": 3.21901273727417,
+        "max": 6.43802547454834,
+        "min": 0.0,
+        "range": 6.43802547454834
+      },
+      "neuron_type": "high_variance",
+      "responsiveness_score": 1.999999993786915
+    },
+    {
+      "neuron_index": 897,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy",
+        "joy"
+      ],
+      "top_activation_values": [
+        2.0525174140930176,
+        0.0
+      ],
+      "activation_stats": {
+        "mean": 1.0262587070465088,
+        "std": 1.0262587070465088,
+        "max": 2.0525174140930176,
+        "min": 0.0,
+        "range": 2.0525174140930176
+      },
+      "neuron_type": "high_variance",
+      "responsiveness_score": 1.999999980511737
+    },
+    {
+      "neuron_index": 929,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy",
+        "joy"
+      ],
+      "top_activation_values": [
+        0.7325263023376465,
+        0.0
+      ],
+      "activation_stats": {
+        "mean": 0.36626315116882324,
+        "std": 0.36626315116882324,
+        "max": 0.7325263023376465,
+        "min": 0.0,
+        "range": 0.7325263023376465
+      },
+      "neuron_type": "moderate_variance",
+      "responsiveness_score": 1.9999999453944537
+    },
+    {
+      "neuron_index": 33,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy",
+        "joy"
+      ],
+      "top_activation_values": [
+        0.5898569822311401,
+        0.0
+      ],
+      "activation_stats": {
+        "mean": 0.29492849111557007,
+        "std": 0.29492849111557007,
+        "max": 0.5898569822311401,
+        "min": 0.0,
+        "range": 0.5898569822311401
+      },
+      "neuron_type": "moderate_variance",
+      "responsiveness_score": 1.9999999321869542
+    }
+  ],
+  "concept_activation_pattern": {
+    "mean_activation": -0.031154383472835435,
+    "std_activation": 1.2671560964991873,
+    "max_activation": 16.5069667249918,
+    "min_activation": -32.25043735653162
+  }
+}

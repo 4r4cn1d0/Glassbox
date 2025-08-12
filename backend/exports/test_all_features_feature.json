@@ -1,0 +1,82 @@
+{
+  "concept_tokens": [
+    "happy",
+    "joy"
+  ],
+  "layer": 6,
+  "top_neurons": [
+    248,
+    792,
+    897
+  ],
+  "activation_strengths": [
+    33.30900573730469,
+    5.668679237365723,
+    2.142676591873169
+  ],
+  "top_neurons_analysis": [
+    {
+      "neuron_index": 248,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy"
+      ],
+      "top_activation_values": [
+        33.86310958862305
+      ],
+      "activation_stats": {
+        "mean": 33.86310958862305,
+        "std": 0.0,
+        "max": 33.86310958862305,
+        "min": 33.86310958862305,
+        "range": 0.0
+      },
+      "neuron_type": "low_variance",
+      "responsiveness_score": 3386310958.8623047
+    },
+    {
+      "neuron_index": 792,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy"
+      ],
+      "top_activation_values": [
+        6.43802547454834
+      ],
+      "activation_stats": {
+        "mean": 6.43802547454834,
+        "std": 0.0,
+        "max": 6.43802547454834,
+        "min": 6.43802547454834,
+        "range": 0.0
+      },
+      "neuron_type": "low_variance",
+      "responsiveness_score": 643802547.454834
+    },
+    {
+      "neuron_index": 897,
+      "layer": 6,
+      "top_activating_tokens": [
+        "happy"
+      ],
+      "top_activation_values": [
+        2.0525174140930176
+      ],
+      "activation_stats": {
+        "mean": 2.0525174140930176,
+        "std": 0.0,
+        "max": 2.0525174140930176,
+        "min": 2.0525174140930176,
+        "range": 0.0
+      },
+      "neuron_type": "low_variance",
+      "responsiveness_score": 205251741.40930176
+    }
+  ],
+  "concept_activation_pattern": {
+    "mean_activation": -0.05995197966694832,
+    "std_activation": 2.5630385875701904,
+    "max_activation": 33.30900573730469,
+    "min_activation": -64.90015411376953
+  }
+}

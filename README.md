@@ -1,4 +1,4 @@
-# 🔍 Glassbox - Advanced LLM Debugger
+# Glassbox - Advanced LLM Debugger
 
 <div align="center">
   <img src="logo_light.png" alt="Glassbox Logo" width="120" height="120">
@@ -12,29 +12,29 @@
 
 ---
 
-## ✨ **What is Glassbox?**
+## What is Glassbox?
 
 Glassbox is a powerful debugging platform that provides **real-time visualization** and **analysis** of large language model behavior. Perfect for researchers, developers, and AI engineers who need to understand how their models think.
 
-### 🎯 **Key Features**
+### Key Features
 
-- **🔥 Attention Heatmaps** - Visualize where your model focuses during generation
-- **🗺️ Token Embeddings** - 2D projections (PCA/t-SNE) of high-dimensional token representations  
-- **📊 Probability Analysis** - Real-time softmax probabilities with information theory metrics
-- **⚡ Session Caching** - Fast timeline scrubbing with `past_key_values` optimization
-- **🎛️ Interactive Controls** - Click any token to jump through the generation timeline
-- **🔄 Real-time Updates** - Live visualization as tokens are generated
+- **Attention Heatmaps** - Visualize where your model focuses during generation
+- **Token Embeddings** - 2D projections (PCA/t-SNE) of high-dimensional token representations  
+- **Probability Analysis** - Real-time softmax probabilities with information theory metrics
+- **Session Caching** - Fast timeline scrubbing with `past_key_values` optimization
+- **Interactive Controls** - Click any token to jump through the generation timeline
+- **Real-time Updates** - Live visualization as tokens are generated
 
 ---
 
-## 🚀 **Quick Start**
+## Quick Start
 
-### **Prerequisites**
+### Prerequisites
 - Python 3.8+
 - Node.js 16+
 - 8GB+ RAM (for GPT-2 Large)
 
-### **1. Clone & Setup**
+### 1. Clone & Setup
 ```bash
 git clone <your-repo>
 cd Glassbox
@@ -48,7 +48,7 @@ cd ../frontend
 npm install
 ```
 
-### **2. Start Servers**
+### 2. Start Servers
 
 **Easy Start (Windows):**
 ```bash
@@ -68,20 +68,20 @@ cd frontend
 npm start
 ```
 
-### **3. Open Application**
+### 3. Open Application
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 
 ---
 
-## 📖 **How to Use**
+## How to Use
 
-### **🎯 Step 1: Enter a Prompt**
+### Step 1: Enter a Prompt
 ```
 In quantum physics, the principle of superposition states that particles can exist in multiple states simultaneously until observed. Similarly, machine learning models process information through layered transformations, where each layer builds upon the previous one to create increasingly complex representations. The fascinating connection between these concepts
 ```
 
-### **🔄 Step 2: Generate & Analyze**
+### Step 2: Generate & Analyze
 1. Click **"TRACE GENERATION"**
 2. Watch real-time token generation
 3. Explore 4 visualization tabs:
@@ -90,7 +90,7 @@ In quantum physics, the principle of superposition states that particles can exi
    - **Analysis**: Information theory metrics and statistics
    - **Embeddings**: 2D projections of token representations
 
-### **🎛️ Step 3: Interactive Exploration** 
+### Step 3: Interactive Exploration 
 - **Click any token** in embeddings to jump to that position
 - **Hover over heatmap cells** to see attention values
 - **Scrub through timeline** to see how attention evolves
@@ -98,23 +98,23 @@ In quantum physics, the principle of superposition states that particles can exi
 
 ---
 
-## 🏗️ **Architecture**
+## Architecture
 
-### **Backend (`/backend`)**
+### Backend (`/backend`)
 - **FastAPI** server with async processing
 - **GPT-2 Large** model loading and inference
 - **Session caching** with `past_key_values` for performance
 - **Top-K optimization** for attention matrix compression
 - **Real vocabulary mapping** for accurate probability analysis
 
-### **Frontend (`/frontend`)**
+### Frontend (`/frontend`)
 - **React + TypeScript** for type safety
 - **D3.js** for interactive visualizations
 - **Framer Motion** for smooth animations
 - **Material-UI** components
 - **Session management** with real-time updates
 
-### **Key Technologies**
+### Key Technologies
 ```
 Backend:  FastAPI + PyTorch + Transformers + NumPy
 Frontend: React + TypeScript + D3.js + Framer Motion
@@ -124,22 +124,22 @@ Caching:  In-memory sessions with past_key_values
 
 ---
 
-## 📊 **Visualization Guide**
+## Visualization Guide
 
-### **🔥 Attention Heatmap**
+### Attention Heatmap
 - **Rows**: Source tokens (what's paying attention)
 - **Columns**: Target tokens (what's being attended to)
 - **Colors**: Blue (low) → Orange/Red (high attention)
 - **Current Token**: Green border with pulsing effect
 
-### **🗺️ Token Embeddings**
+### Token Embeddings
 - **Yellow dots**: Prompt tokens
 - **Teal dots**: Generated tokens  
 - **Orange dot**: Current token position
 - **Lines**: Sequential token connections
 - **Clustering**: Similar tokens appear closer together
 
-### **📊 Probability Bars**
+### Probability Bars
 - **Bar Height**: Probability of each token
 - **Colors**: Gradient from low to high probability
 - **Metrics**: Confidence %, logit values, bits surprised
@@ -147,9 +147,9 @@ Caching:  In-memory sessions with past_key_values
 
 ---
 
-## ⚙️ **Advanced Configuration**
+## Advanced Configuration
 
-### **Model Settings**
+### Model Settings
 ```python
 # In backend/app.py
 MAX_NEW_TOKENS = 20        # Tokens to generate
@@ -157,7 +157,7 @@ TOP_K_ATTENTION = 10       # Top attention heads to keep
 TOP_K_TOKENS = 20          # Top tokens to show in probabilities
 ```
 
-### **Performance Tuning**
+### Performance Tuning
 ```python
 # Memory optimization
 torch.cuda.empty_cache()   # Clear GPU memory
@@ -166,21 +166,21 @@ model.half()               # Use 16-bit precision
 
 ---
 
-## 🔮 **Future SaaS Roadmap**
+## Future SaaS Roadmap
 
 Glassbox is designed for easy transformation into a scalable SaaS platform:
 
-### **Phase 1: Infrastructure** 
+### Phase 1: Infrastructure 
 - Microservices architecture
 - Multi-user authentication  
 - Cloud deployment (AWS/GCP)
 
-### **Phase 2: Advanced Features**
+### Phase 2: Advanced Features
 - Multiple model support (GPT-3, LLaMA, etc.)
 - Real-time collaboration
 - Custom model uploads
 
-### **Phase 3: Enterprise**
+### Phase 3: Enterprise
 - API access
 - White-label solutions
 - Advanced analytics
@@ -189,7 +189,7 @@ Glassbox is designed for easy transformation into a scalable SaaS platform:
 
 ---
 
-## 🤝 **Contributing**
+## Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -199,7 +199,7 @@ We welcome contributions! Here's how to get started:
 4. **Push to branch** (`git push origin feature/amazing-feature`)
 5. **Open a Pull Request**
 
-### **Development Setup**
+### Development Setup
 ```bash
 # Backend development
 cd backend
@@ -214,13 +214,13 @@ npm run lint
 
 ---
 
-## 📄 **License**
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🆘 **Support**
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/your-username/glassbox/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-username/glassbox/discussions)
@@ -228,7 +228,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 **Acknowledgments**
+## Acknowledgments
 
 - **Hugging Face Transformers** for model infrastructure
 - **OpenAI GPT-2** for the base model
@@ -240,7 +240,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <div align="center">
   <img src="logo_light.png" alt="Glassbox" width="60" height="60">
   
-  **Made with ❤️ by the Glassbox Team**
+  **Made with dedication by the Glassbox Team**
   
   *Bringing transparency to AI, one token at a time.*
 </div> 
